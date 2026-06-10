@@ -13,6 +13,8 @@ dependencies = [
     "pandas>=2.2",
     "pandera>=0.20",
     "datasets>=3.0",
+    "requests>=2.31",
+    "python-dotenv>=1.0",
 ]
 
 [project.optional-dependencies]

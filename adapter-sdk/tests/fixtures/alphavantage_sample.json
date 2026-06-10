@@ -1,0 +1,11 @@
+{
+  "items": "5",
+  "sentiment_score_definition": "x <= -0.35: Bearish; ...; x >= 0.35: Bullish",
+  "feed": [
+    {"title": "Stocks rally as inflation cools more than expected", "overall_sentiment_label": "Bullish"},
+    {"title": "Analysts see modest upside for large-cap tech shares", "overall_sentiment_label": "Somewhat-Bullish"},
+    {"title": "Markets steady ahead of the Federal Reserve decision", "overall_sentiment_label": "Neutral"},
+    {"title": "Retailer trims full-year outlook amid soft demand", "overall_sentiment_label": "Somewhat-Bearish"},
+    {"title": "Bank warns of rising recession risk for next year", "overall_sentiment_label": "Bearish"}
+  ]
+}
