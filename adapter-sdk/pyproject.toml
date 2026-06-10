@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "adapter-sdk"
+version = "0.1.0"
+description = "AdapterForge Data Adapter SDK: standardized, validated, versioned ingestion across diverse sources."
+# readme = "README.md"  # re-enable once you write adapter-sdk/README.md (your words — rule 5)
+requires-python = ">=3.11"
+authors = [{ name = "Karthik" }]
+dependencies = [
+    "pandas>=2.2",
+    "pandera>=0.20",
+    "datasets>=3.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.6",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+# E/F = pyflakes+pycodestyle, I = isort, UP = pyupgrade, B = bugbear, N = naming
+select = ["E", "F", "I", "UP", "B", "N"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
