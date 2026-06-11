@@ -1,0 +1,36 @@
+name: CI
+
+# Run on every push and every pull request.
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: adapter-sdk   # the SDK package lives in this subfolder
+
+    steps:
+      # 1. get the repo's code onto the runner
+      - uses: actions/checkout@v4
+
+      # 2. install a known Python version
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # 3. install the SDK + its dev tools (pytest, ruff)
+      - name: Install
+        run: pip install -e ".[dev]"
+
+      # 4. lint: style + format must be clean
+      - name: Lint (ruff)
+        run: |
+          ruff check .
+          ruff format --check .
+
+      # 5. run the test suite
+      - name: Test (pytest)
+        run: pytest
