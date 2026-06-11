@@ -1,0 +1,4 @@
+[core]
+    remote = storage
+['remote "storage"']
+    url = s3://adapterforge-dvc-073053153137/dvcstore
