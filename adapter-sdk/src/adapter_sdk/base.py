@@ -9,9 +9,17 @@ or run the steps out of order. Each source only has to fill in ``read`` — the
 one abstract "blank".
 """
 
+import json
 from abc import ABC, abstractmethod
+from pathlib import Path
 
 import pandas as pd
+
+from adapter_sdk import __version__
+
+# Root of the local data lake (the medallion zones live under here).
+# Tests monkeypatch this to a temp directory so they don't pollute the repo.
+DATA_ROOT = Path("data")
 
 
 class BaseAdapter(ABC):
@@ -24,6 +32,9 @@ class BaseAdapter(ABC):
 
     # Each adapter sets this to its rulebook (e.g. schema_v1). validate() runs it.
     schema = None
+
+    # Each adapter sets this to a short name used for its file in the data lake.
+    name = None
 
     def run(self) -> None:
         """Run the full lifecycle in order: read -> validate -> version -> land.
@@ -55,18 +66,29 @@ class BaseAdapter(ABC):
         """
         self.schema.validate(df)
 
-    def version(self, df: pd.DataFrame) -> None:  # noqa: B027  (intentional no-op hook for now)
-        """Stamp the batch with its schema version + SDK version.
+    def version(self, df: pd.DataFrame) -> None:
+        """Record provenance for this batch: which schema + SDK version produced it.
 
-        Shared by every adapter. (Built out in a later component.)
+        Shared by every adapter. Stores the record on ``self.metadata``; ``land``
+        writes it next to the data as a .meta.json sidecar.
         """
-        # TODO (later component): record schema version + SDK version.
-        ...
+        self.metadata = {
+            "schema_version": self.schema.name,
+            "sdk_version": __version__,
+            "rows": len(df),
+        }
 
-    def land(self, df: pd.DataFrame) -> None:  # noqa: B027  (intentional no-op hook for now)
-        """Save the table to storage (the S3 medallion zones).
+    def land(self, df: pd.DataFrame) -> None:
+        """Save the batch into the data lake — raw and validated zones — as parquet.
 
-        Shared by every adapter. (Built out in a later component.)
+        Shared by every adapter. Writes one file per zone, named after the
+        adapter (e.g. data/validated/financial_phrasebank.parquet).
+
         """
-        # TODO (later component): write df to S3.
-        ...
+
+        for zone in ("raw", "validated"):
+            path = DATA_ROOT / zone / f"{self.name}.parquet"
+            path.parent.mkdir(parents=True, exist_ok=True)
+            df.to_parquet(path, index=False)
+            meta_path = path.parent / f"{self.name}.meta.json"
+            meta_path.write_text(json.dumps(self.metadata, indent=2))

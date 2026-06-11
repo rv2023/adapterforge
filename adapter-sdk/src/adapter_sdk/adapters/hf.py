@@ -19,6 +19,7 @@ LABEL_MAP = {"positive": "bullish", "negative": "bearish", "neutral": "neutral"}
 
 class HFDatasetAdapter(BaseAdapter):
     schema = schema_v1
+    name = "financial_phrasebank"
 
     def read(self) -> pd.DataFrame:
         """Load Financial PhraseBank and normalize it to our (text, label) table."""

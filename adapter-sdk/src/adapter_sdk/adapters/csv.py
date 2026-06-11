@@ -19,6 +19,7 @@ class CSVAdapter(BaseAdapter):
     """Adapter for a Twitter-Financial-News-style CSV (text + integer label)."""
 
     schema = schema_v1
+    name = "twitter_financial_news"
 
     def __init__(self, path: str):
         self.path = path

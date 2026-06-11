@@ -121,9 +121,16 @@ Boundaries: NO pretraining, NO RLHF, NO image/VLM. SFT/LoRA + distillation only.
 
 ## Current state (update this section as we go)
 
-- Active milestone: M0 + M1 (not started)
-- Decisions log: PIMCO/financial scope chosen; Dagster over Airflow; uv over pip
+- Active milestone: M1 — Components 0–5 done (scaffold, BaseAdapter, schema v1,
+  HF/CSV/REST adapters); 12 tests green; pushed to main via PR #1.
+  Remaining: 6 (S3+DVC `land()`), 7 (corrupt.py), 8 (CI), SDK README.
+  M0 (GPU drills) deferred to before M5.
+- Decisions log: PIMCO/financial scope; Dagster over Airflow; **pip+venv used**
+  (uv deferred — Karthik chose pip fallback); FPB via `ChanceFocus/flare-fpb`
+  Parquet mirror (canonical script dataset fails on datasets 5.0); REST =
+  Alpha Vantage NEWS_SENTIMENT (key in `.env`).
 - Blockers: none
+- Pending tidy: rename committed `.env copy.example` → `.env.example`
 
 ## Session workflow
 

@@ -12,5 +12,6 @@ ALLOWED_LABELS = ["bullish", "bearish", "neutral"]
 
 
 schema_v1 = pa.DataFrameSchema(
-    {"text": pa.Column(str), "label": pa.Column(str, checks=pa.Check.isin(ALLOWED_LABELS))}
+    {"text": pa.Column(str), "label": pa.Column(str, checks=pa.Check.isin(ALLOWED_LABELS))},
+    name="v1",  # version label; version() stamps this onto each landed batch
 )

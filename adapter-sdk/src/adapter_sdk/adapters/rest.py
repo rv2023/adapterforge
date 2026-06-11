@@ -33,6 +33,7 @@ class RestAPIAdapter(BaseAdapter):
     """Adapter for live financial news (Alpha Vantage NEWS_SENTIMENT endpoint)."""
 
     schema = schema_v1
+    name = "alphavantage_news"
 
     def read(self) -> pd.DataFrame:
         """Fetch live financial news and normalize it to our (text, label) table."""
