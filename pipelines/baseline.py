@@ -19,6 +19,9 @@ from sklearn.metrics import f1_score
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 
+import mlflow
+import mlflow.sklearn
+
 # The SDK lands the validated (silver) PhraseBank here. The baseline reads silver,
 # NOT raw — we want the clean, schema-checked rows.
 DATA_PATH = Path("data/validated/financial_phrasebank.parquet")
@@ -92,25 +95,32 @@ def evaluate(model, texts, labels) -> float:
 
 
 def main() -> None:
-    """Run the baseline end to end and print the bar.
+    """Run the C-sweep tuning runs and log each to MLflow.
 
-    Order matters: fit on TRAIN ONLY. The val and test sets must never be seen
-    by fit(). (Val is for tuning later; test is the sealed final score.)
+    Train on TRAIN, score on VALIDATION. Test stays sealed (bar already locked).
     """
+    mlflow.set_tracking_uri("sqlite:///mlflow.db")
+    mlflow.set_experiment("m2-baseline")
     df = load_data()
     train_df, val_df, test_df = split_data(df)
-    c = 10
-    model = build_model(c)
-    fit_start = perf_counter()
-    model.fit(train_df["text"], train_df["label"])
-    step_time_sec = perf_counter() - fit_start
-    samples_per_sec = len(train_df) / step_time_sec
-    test_f1 = evaluate(model, test_df["text"], test_df["label"])
-    print(f"C={c}  LOCKED BAR - frozen TEST macro-F1: {test_f1:.4f}")
-    print(
-        "csv row: "
-        f"{c},{test_f1:.4f},{step_time_sec:.4f},{samples_per_sec:.2f}"
-    )
+
+    with mlflow.start_run():
+        c = 10
+        model = build_model(c)
+        fit_start = perf_counter()
+        model.fit(train_df["text"], train_df["label"])   # ← THE FIX: train on TRAIN
+        step_time_sec = perf_counter() - fit_start
+        samples_per_sec = len(train_df) / step_time_sec
+        val_f1 = evaluate(model, val_df["text"], val_df["label"])   # score on VALIDATION
+
+        mlflow.log_param("C", c)
+        mlflow.log_param("random_seed", RANDOM_SEED)
+        mlflow.log_metric("val_f1", val_f1)
+        mlflow.log_metric("step_time_sec", step_time_sec)
+        mlflow.log_metric("samples_per_sec", samples_per_sec)
+        mlflow.sklearn.log_model(model, name="model")
+
+        print(f"C={c}  validation macro-F1: {val_f1:.4f}")   # ← label fixed: validation, not "LOCKED BAR/TEST"
 
 
 if __name__ == "__main__":

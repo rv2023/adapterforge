@@ -1,85 +1,96 @@
-# M2 Session Notes — Training + Experiment Tracking
+# M2 Session Notes — Training + Experiment Tracking (COMPLETE)
 
-Session date: 2026-06-11. Owner: Karthik. Tutor-mode learning session.
+Sessions: 2026-06-11 → 2026-06-13. Owner: Karthik. Tutor-mode learning.
+**M2 status: all 5 steps DONE.** Next milestone: M3 (control plane).
 
-## Where we are
+## Headline result
 
-M2 steps 1–3 **done**, step 4 (MLflow) **just started**, step 5 (overfit) pending.
+**THE BAR = macro-F1 `0.6885` on the frozen TEST set, `C=10`.**
+Every future model (M5 LLM, M5 student) must beat this on the same sealed test set.
+
+## Steps
 
 | Step | Status | What |
 |---|---|---|
-| 1 | ✅ | Landed Financial PhraseBank via the HF adapter into the silver zone |
-| 2 | ✅ | Baseline built; produced the bar |
-| 3 | ✅ | Hand-tracked runs in `pipelines/runs.csv`; locked the bar |
-| 4 | 🔄 | MLflow — concept explained, `pip install mlflow` next, skeleton not yet written |
-| 5 | ⬜ | Deliberate overfit (50 passes, 500 rows) + plot train-vs-val curve |
-
-## The headline result
-
-**THE BAR = macro-F1 `0.6885` on the frozen TEST set, with `C=10`.**
-This is the number every future model in the project (M5 LLM, M5 student) must beat
-on the same sealed test set.
+| 1 | ✅ | Landed Financial PhraseBank via HF adapter → silver zone |
+| 2 | ✅ | Baseline: stratified seeded 70/15/15 split, TF-IDF + LogReg, locked the bar |
+| 3 | ✅ | Hand-tracked C-sweep in `pipelines/runs.csv`; locked bar on test once |
+| 4 | ✅ | Re-logged runs to MLflow (sqlite backend); compared in UI — matched CSV exactly |
+| 5 | ✅ | Deliberate overfit (SGDClassifier, 500 rows, 50 epochs); plotted + read curves |
 
 ## What got built
 
-- `pipelines/baseline.py` — load silver parquet → split 70/15/15 (stratified, seeded)
-  → TF-IDF + LogReg pipeline → score. `build_model(c)` takes `C`; `main` times the
-  fit (`perf_counter`), computes samples/sec, currently scores `C=10` on TEST and
-  prints the LOCKED BAR.
-- `pipelines/runs.csv` — hand-typed tuning log (validation scores):
+- `pipelines/baseline.py` — load silver parquet → `split_data` (stratified, seeded
+  70/15/15) → `build_model(c)` (TF-IDF + LogReg pipeline) → `evaluate` (macro-F1).
+  `main` logs to MLflow: params (C, random_seed), metrics (val_f1, step_time_sec,
+  samples_per_sec), and the model artifact. Backend = `sqlite:///mlflow.db`,
+  experiment `m2-baseline`.
+- `pipelines/runs.csv` — hand-typed validation tuning log (the deliberate "pain").
+- `pipelines/overfit.py` — Step 5: tiny train (500 rows) + 50 epochs via
+  `SGDClassifier(loss="log_loss")` + `partial_fit`; logs train/val log-loss per
+  epoch; saves `docs/overfit_curve.png`; prints the sweet-spot (min val loss) epoch.
+- `mlflow.db`, `mlruns/` — MLflow store (gitignore candidates).
+- Diagrams: `docs/m2-flow.md`, `docs/architecture.md`.
 
-  | C | val_macro_f1 | step_time_s | samples/sec |
-  |---|---|---|---|
-  | 0.01 | 0.5113 | 0.30 | 7211 |
-  | 0.1 | 0.6062 | 1.42 | 1531 |
-  | 1.0 | 0.6685 | 3.89 | 559 |
-  | 10.0 | 0.6714 | 7.92 | 274 |
-  | (100 earlier) | 0.6528 | — | — |
+## Session-1 concepts (baseline + tracking)
 
-- `docs/m2-flow.md`, `docs/architecture.md` — diagrams (created this session).
+- Why a baseline: sets the bar so "the LLM is good" has a number to beat. A cheap
+  model that ties the LLM is a *valuable* finding (→ M8 cost-aware router).
+- Three piles: train=learn, val=tune, test=sealed vault opened once. Decide on
+  validation, confirm once on test. Tuning on test inflates the bar into a lie.
+- F1 not accuracy (neutral-heavy imbalance; chance ≈ 0.33 for 3 classes).
+- TF-IDF → LogReg: TF-IDF = text→numbers (IDF down-weights filler); LogReg is a
+  *classifier* despite the name. Same task/data/metric as M5 LLM → fair comparison.
+- `class_weight="balanced"` (fixes imbalance, kept on) vs `C` (regularization).
+- The C sweep = underfit → sweet-spot → overfit curve (Karthik generated it):
+  0.01→0.51, 0.1→0.61, 1→0.668, 10→0.671(best), 100→0.653. C=10 wins on validation
+  but only ~0.003 over C=1 at 2× train time — a real cost/accuracy call (→ M8).
+- seed vs 70/15/15 = "which rows" vs "how big"; seed = jumble-then-slice, frozen.
+- MLflow building blocks: set_tracking_uri (sqlite, needed for the M3 registry),
+  set_experiment, start_run, log_param/log_metric/log_model. Re-logged runs matched
+  the hand CSV exactly → the "aha" (seed makes it reproducible).
 
-## Concepts covered (the part that matters)
+## Session-2 concepts (overfitting, deep ML mechanics)
 
-- **Why a baseline exists:** sets the bar so "the LLM is good" has a number to beat.
-  A cheap model that ties the LLM is a *valuable* finding (→ M8 cost-aware router).
-- **Three piles (train/val/test):** train = learn, val = tune knobs, test = sealed
-  vault opened once. Decide on **validation**, confirm once on **test**. Tuning on
-  test inflates the bar into a number that lies about future performance.
-- **Why F1 not accuracy:** data is neutral-heavy (imbalanced); accuracy lets a
-  lazy "always neutral" model hide. Macro-F1 forces good performance on every class.
-  Chance level for 3 classes ≈ 0.33.
-- **TF-IDF → LogReg:** TF-IDF turns text into meaningful numbers (down-weights
-  filler words via IDF); LogReg is a *classifier* (despite the name) that learns a
-  weight per word. Same task/data/metric as the M5 LLM → comparison is fair.
-- **`class_weight="balanced"`** (fixes imbalance, kept on) vs **`C`** (regularization
-  dial — how big the word-weights may grow; low=underfit/cautious, high=overfit/
-  memorizes flukes). Change one knob at a time.
-- **The C sweep is the underfit→sweet-spot→overfit curve.** Karthik generated it:
-  0.01→0.51, 0.1→0.61, 1→0.67, 10→0.671(best), 100→0.653(dropping). C=10 wins on
-  validation but only by ~0.003 over C=1 at 2× the train time — a real cost/accuracy
-  call (foreshadows M8).
-- **seed vs 70/15/15:** sizes vs *which rows*. Seed = "jumble then slice", frozen
-  so the test set is identical every run. This is what M3's promotion gate hashes.
-- **solver / converge / max_iter / C** (valley analogy): solver = ball rolling
-  downhill to best weights; converge = reached bottom; max_iter = step budget
-  (default 100, we use 1000); C shapes the valley — high C = flat plain = many
-  steps = slow (explains the 26× timing spread).
-- **step_time / samples_sec:** speed metrics logged from day one; habit pays off in
-  M5's "≥5% step-time gain" experiment. samples/sec is the size-independent rate.
+- solver / converge / max_iter / C (valley analogy): solver = ball rolling to best
+  weights; converge = reached bottom; max_iter = step budget (cap, stops early if
+  converged); C shapes the valley (high C = flat plain = many steps = slow → explains
+  the 26× timing spread across the C sweep).
+- epoch vs C vs iteration: C = a separate experiment; epoch = one pass over train
+  (one downhill step); the curve = train/val loss measured after each epoch.
+- Overfitting is a SHAPE, not a number: train loss ↓ forever while val loss bottoms
+  (sweet spot) then ↑. The widening train-val GAP = overfitting in motion.
+- Forced it with SGDClassifier + partial_fit (run epochs by hand to measure between
+  steps; LogReg one-shot fit can't show a curve). Tiny data + many epochs = overfit.
+- Two knobs that both control overfit: **C/alpha** (freedom — how big weights may
+  grow) and **epochs** (time). They interact: strong reg can hold back epoch-driven
+  overfit. Demonstrated live: l2 default → val flat ~0.78; `penalty=None` → val
+  CLIMBS to ~1.10. The regularized model GENERALIZES BETTER (0.78 < 1.10) — that's
+  *why* we regularize.
+- alpha double-duty in SGD: with `penalty=None` it leaves the objective but still
+  sets the learning rate under `learning_rate="optimal"` (η ≈ 1/(α(t+t₀))).
+- The math: minimize `E(w) = (1/n)Σ L(yᵢ,f(xᵢ)) + α·R(w)`; l2 → R=½‖w‖², None → R=0;
+  update `w ← w − η(∇L + α∇R)`.
+- Unifying picture: the model IS `y = mx + c` with thousands of x's (TF-IDF values),
+  m = word-weights (what fit learns), c = bias, wrapped in softmax for 3 classes.
+  Capital-C is NOT in the prediction — it lives in the *training objective*, a budget
+  on how big the m's may grow. lowercase c = intercept (in prediction); capital C =
+  regularization (in training). Different worlds, unlucky letters.
 
-## Resume point (next session)
+## Two quiz answers (for the record)
 
-1. `pip install mlflow` (may already be done — check).
-2. Answer the warm-up: sort `C`, `val_f1`, `step_time_sec`, `samples_per_sec`,
-   `random_seed` into **params** (settings chosen) vs **metrics** (results measured).
-   Expected: params = C, random_seed; metrics = val_f1, step_time_sec, samples_per_sec.
-3. Get the MLflow skeleton for `main`: wrap the run in `mlflow.start_run()`, log the
-   param(s), log the metrics, log the model artifact; local SQLite backend.
-4. Run twice, open the MLflow UI, compare two runs side by side (the "aha").
-5. Then Step 5: deliberate overfit + hand-plotted train-vs-val curve.
+1. Val loss bottoms at epoch 1 then climbs → fix = **early stopping** (stop training
+   at the sweet spot / lowest val loss). Meet it again in M5.
+2. More data resists overfitting because the model can't memorize its way through
+   thousands of varied rows the way it memorizes 500 — there's too much variety to
+   fake, so it's forced to learn generalizable patterns instead.
 
-## Open threads
+## To close the milestone / next session (M3)
 
-- M1 SDK README in Karthik's own words (rule 5) — still pending from M1.
-- Untracked docs not yet committed: `docs/m2-flow.md`, `docs/architecture.md`,
-  `docs/m2-session-notes.md`, plus `pipelines/`. Commits are Karthik's to make.
+- Commit the work (Karthik's commits): `pipelines/` (baseline.py, overfit.py,
+  runs.csv) + `docs/*.md`. Suggest gitignoring `mlflow.db`, `mlruns/`, `data/`,
+  `docs/overfit_curve.png`.
+- Still pending from M1: SDK README in Karthik's own words (rule 5).
+- M3 = control-plane FastAPI: promote endpoint with policy gates (F1 margin,
+  eval-set hash, schema compat, approved_by), audit JSONL to S3, lineage endpoint.
+  The MLflow sqlite backend chosen here is what M3's registry reads.

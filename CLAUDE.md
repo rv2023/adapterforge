@@ -121,16 +121,20 @@ Boundaries: NO pretraining, NO RLHF, NO image/VLM. SFT/LoRA + distillation only.
 
 ## Current state (update this section as we go)
 
-- Active milestone: **M1 essentially COMPLETE** — Components 0–8 done (scaffold,
-  BaseAdapter, schema v1, HF/CSV/REST adapters, land/version, DVC+S3, corrupt.py,
-  GitHub Actions CI); 17 tests green; pushed to main. Only the **SDK README**
-  (Karthik's own words — rule 5) remains. **Next milestone: M2** (sklearn baseline
-  + MLflow). M0 (GPU drills) deferred to before M5.
+- Active milestone: **M2 COMPLETE** — all 5 steps done (baseline TF-IDF+LogReg,
+  hand CSV tracking, MLflow w/ sqlite backend, deliberate overfit + train-vs-val
+  curve). **The bar = macro-F1 0.6885 on the frozen test set, C=10.** Code in
+  `pipelines/baseline.py` + `pipelines/overfit.py`; session log in
+  `docs/m2-session-notes.md`. **Next milestone: M3** (control-plane FastAPI:
+  promotion gates, audit, lineage — reads the MLflow sqlite registry). M0 (GPU
+  drills) deferred to before M5. M1 complete; **SDK README still pending** (rule 5).
 - Decisions log: PIMCO/financial scope; Dagster over Airflow; **pip+venv used**
   (uv deferred — Karthik chose pip fallback); FPB via `ChanceFocus/flare-fpb`
   Parquet mirror (canonical script dataset fails on datasets 5.0); REST =
   Alpha Vantage NEWS_SENTIMENT (key in `.env`); DVC remote =
-  `s3://adapterforge-dvc-073053153137/dvcstore` (us-east-1).
+  `s3://adapterforge-dvc-073053153137/dvcstore` (us-east-1); **M2 baseline:
+  70/15/15 stratified split, seed=42 (frozen test), macro-F1, class_weight=balanced,
+  C=10; MLflow backend sqlite:///mlflow.db, experiment `m2-baseline`.**
 - Blockers: none
 
 ## Session workflow
