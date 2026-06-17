@@ -121,13 +121,17 @@ Boundaries: NO pretraining, NO RLHF, NO image/VLM. SFT/LoRA + distillation only.
 
 ## Current state (update this section as we go)
 
-- Active milestone: **M2 COMPLETE** — all 5 steps done (baseline TF-IDF+LogReg,
-  hand CSV tracking, MLflow w/ sqlite backend, deliberate overfit + train-vs-val
-  curve). **The bar = macro-F1 0.6885 on the frozen test set, C=10.** Code in
-  `pipelines/baseline.py` + `pipelines/overfit.py`; session log in
-  `docs/m2-session-notes.md`. **Next milestone: M3** (control-plane FastAPI:
-  promotion gates, audit, lineage — reads the MLflow sqlite registry). M0 (GPU
-  drills) deferred to before M5. M1 complete; **SDK README still pending** (rule 5).
+- Active milestone: **M3 COMPLETE** — control plane built & verified. Registered
+  baseline as `fpb-sentiment` v1 with a dossier (`pipelines/register_baseline.py`);
+  `control-plane/app.py` = FastAPI with gated `POST /promote` (4 gates: approved_by,
+  eval_set_hash==constant, schema==v1, F1≥incumbent+margin/floor) → MLflow alias
+  `production`, append-only `audit.jsonl`, `GET /production` + `/lineage`;
+  `serving/app.py` asks the control plane what's live and serves `/predict`. Break-it
+  passed (higher-F1 v2 with wrong eval-hash rejected). Session log:
+  `docs/m3-session-notes.md`. **Next milestone: M4** (Dagster DAG, OpenLineage→Marquez,
+  Evidently drift, drift→webhook→GH Actions retrain→promote gate→auto-promote — the
+  loop calls this M3 promote API). M0 (GPU drills) deferred to before M5. M2 done
+  (bar = macro-F1 0.6885, C=10). **M1 SDK README still pending** (rule 5).
 - Decisions log: PIMCO/financial scope; Dagster over Airflow; **pip+venv used**
   (uv deferred — Karthik chose pip fallback); FPB via `ChanceFocus/flare-fpb`
   Parquet mirror (canonical script dataset fails on datasets 5.0); REST =
