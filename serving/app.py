@@ -6,6 +6,8 @@ and answers predictions. Promote a new version through the gate + restart this,
 and it serves the new one. The brain decides; this obeys.
 """
 
+import json
+from datetime import datetime, timezone
 from pathlib import Path
 
 import mlflow
@@ -18,6 +20,7 @@ MODEL_NAME = "fpb-sentiment"
 
 # same registry the control plane uses (absolute path -> cwd-independent)
 _DB = Path(__file__).resolve().parent.parent / "mlflow.db"
+PRED_LOG = Path(__file__).resolve().parent / "predictions.jsonl"
 mlflow.set_tracking_uri(f"sqlite:///{_DB}")
 
 app = FastAPI(title="AdapterForge Serving")
@@ -36,6 +39,12 @@ def load_production_model():
     return model, version
 
 
+def log_prediction(record: dict) -> None:
+    record["ts"] = datetime.now(timezone.utc).isoformat()
+    with PRED_LOG.open("a") as f:
+        f.write(json.dumps(record) + "\n")
+
+
 # load ONCE at startup (module import). If the control plane is down, this fails fast.
 model, model_version = load_production_model()
 
@@ -45,4 +54,12 @@ def predict(req: PredictRequest) -> dict:
     """Classify one statement with the currently-loaded production model."""
     pred = model.predict([req.text])[0]
     confidence = float(model.predict_proba([req.text]).max())
+    log_prediction(
+        {
+            "text": req.text,
+            "label": pred,
+            "confidence": confidence,
+            "model_version": model_version,
+        }
+    )
     return {"label": pred, "confidence": confidence, "model_version": model_version}
