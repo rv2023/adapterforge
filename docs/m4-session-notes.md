@@ -32,8 +32,15 @@ runbook, M3 gate = admission control that stops the auto-fix making things worse
   `MARQUEZ_HOST=marquez-api` (server-side proxy) + `WEB_PORT=3000`.
 - `pipelines/lineage.py` — emits OpenLineage events (Job/Run/Dataset) → Marquez graph.
 - `pipelines/loop.py` — the loop: `drift_detected()` → `retrain_and_register()` →
-  `request_promotion()` (POST control-plane /promote). Robust version lookup via
-  `search_model_versions` + max (info.registered_model_version was flaky/None).
+  `request_promotion()` (POST control-plane /promote).
+- **Refactor (post-M4):** the train+register+dossier block (was copy-pasted in
+  register_baseline.py, dag.py, loop.py) is centralized in
+  `register_model_with_dossier(model, test_df)` in `register_baseline.py` — the single
+  source of truth for registering a candidate. Uses the robust version lookup
+  (`search_model_versions` + max; `info.registered_model_version` was flaky/None) and
+  sets the tracking URI + experiment once. dag.py/loop.py just call it.
+  Also added: `requirements.txt`, real `make` targets, `docs/USAGE.md`; gitignored the
+  runtime artifacts (audit.jsonl, predictions.jsonl, drift_report.html).
 - `.github/workflows/retrain.yml` — CI artifact: `repository_dispatch` webhook →
   runs `loop.py`. Fully live in M7 (remote MLflow + control plane via secrets).
 

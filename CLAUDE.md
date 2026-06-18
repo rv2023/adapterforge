@@ -128,7 +128,9 @@ Boundaries: NO pretraining, NO RLHF, NO image/VLM. SFT/LoRA + distillation only.
   `pipelines/lineage.py`, graph renders); the self-healing loop (`pipelines/loop.py` —
   drift→retrain→/promote gate→auto-promote; BOTH paths proven: reject-if-not-better and
   accept-on-better) + CI artifact `.github/workflows/retrain.yml` (repository_dispatch
-  webhook, live in M7). Session log: `docs/m4-session-notes.md`. **Next: M0 GPU drills,
+  webhook, live in M7). Registration is centralized in `register_model_with_dossier`
+  (pipelines/register_baseline.py), reused by dag.py + loop.py (deduped). Usage guide:
+  `docs/USAGE.md`. Session log: `docs/m4-session-notes.md`. **Next: M0 GPU drills,
   then M5** (LLM fine-tuning + distillation). M3 COMPLETE (gated `/promote` + audit +
   serving). M2 done (bar = macro-F1 0.6885, C=10). **M1 SDK README still pending** (rule 5).
   Cleanup pending: registry demo cruft (dummy v2 bad-hash + v3–v11 reruns; production=v1);

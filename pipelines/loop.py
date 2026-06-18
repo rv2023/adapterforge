@@ -16,15 +16,9 @@ import mlflow
 import pandas as pd
 import requests
 
-from baseline import build_model, evaluate, load_data, split_data
+from baseline import build_model, load_data, split_data
 from drift import PSI_THRESHOLD, REGIME_CSV, oov_rate, psi
-from register_baseline import (
-    BEST_C,
-    MODEL_NAME,
-    SCHEMA_VERSION,
-    compute_eval_hash,
-    get_git_commit,
-)
+from register_baseline import BEST_C, MODEL_NAME, register_model_with_dossier
 
 CONTROL_PLANE = "http://127.0.0.1:8000"
 _DB = Path(__file__).resolve().parent.parent / "mlflow.db"
@@ -46,29 +40,10 @@ def drift_detected() -> bool:
 
 def retrain_and_register() -> str:
     """Retrain the baseline and register a NEW candidate version with its dossier."""
-    mlflow.set_experiment("m2-baseline")
     train_df, _, test_df = split_data(load_data())
     model = build_model(BEST_C)
     model.fit(train_df["text"], train_df["label"])
-    test_f1 = evaluate(model, test_df["text"], test_df["label"])
-    eval_hash = compute_eval_hash(test_df)
-    commit = get_git_commit()
-    with mlflow.start_run():
-        info = mlflow.sklearn.log_model(
-            model,
-            name="model",
-            registered_model_name=MODEL_NAME,
-        )
-        client = mlflow.MlflowClient()
-        version = max(
-            (mv.version for mv in client.search_model_versions(f"name='{MODEL_NAME}'")),
-            key=int,
-        )
-        client.set_model_version_tag(MODEL_NAME, version, "test_f1", str(test_f1))
-        client.set_model_version_tag(MODEL_NAME, version, "eval_set_hash", eval_hash)
-        client.set_model_version_tag(MODEL_NAME, version, "schema_version", SCHEMA_VERSION)
-        client.set_model_version_tag(MODEL_NAME, version, "code_commit", commit)
-        return str(version)
+    return register_model_with_dossier(model, test_df)
 
 
 def request_promotion(version: str) -> requests.Response:

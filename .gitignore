@@ -38,6 +38,11 @@ mlflow.db
 tmp_dagster_*/
 .dagster_home/
 
+# Runtime artifacts (generated at run time, not source)
+control-plane/audit.jsonl
+serving/predictions.jsonl
+docs/drift_report.html
+
 # OS / editor
 .DS_Store
 .idea/

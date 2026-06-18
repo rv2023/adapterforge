@@ -1,0 +1,22 @@
+# Runtime deps for the pipelines / control-plane / serving (M2–M4).
+# The Data Adapter SDK itself is installed separately: pip install -e adapter-sdk[dev]
+#
+#   pip install -r requirements.txt
+
+# M2 — baseline + tracking
+scikit-learn
+pandas
+scipy
+matplotlib
+mlflow
+
+# M3 — control plane + serving
+fastapi
+uvicorn
+requests
+
+# M4 — drift + orchestration + lineage
+evidently==0.7.21          # 0.7.x API (Report/Dataset/DataDefinition/DataDriftPreset)
+dagster
+dagster-webserver
+openlineage-python

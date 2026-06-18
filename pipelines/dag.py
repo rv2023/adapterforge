@@ -16,20 +16,11 @@ from pathlib import Path
 # the repo root (needed so data/ paths resolve correctly).
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-import mlflow
 from dagster import Definitions, asset
 
 from adapter_sdk.adapters.hf import HFDatasetAdapter
-from baseline import build_model, evaluate, load_data, split_data
-from register_baseline import (
-    BEST_C,
-    MODEL_NAME,
-    SCHEMA_VERSION,
-    compute_eval_hash,
-    get_git_commit,
-)
-
-_DB = Path(__file__).resolve().parent.parent / "mlflow.db"
+from baseline import build_model, load_data, split_data
+from register_baseline import BEST_C, register_model_with_dossier
 
 
 @asset
@@ -53,26 +44,9 @@ def baseline_model(financial_phrasebank: str):
 
 @asset
 def registered_model(baseline_model) -> str:
-    """Score on TEST, register the model with its dossier in MLflow. Returns the version."""
-    mlflow.set_tracking_uri(f"sqlite:///{_DB}")
-    mlflow.set_experiment("m2-baseline")
+    """Register the trained model with its dossier in MLflow. Returns the version."""
     _, _, test_df = split_data(load_data())
-    test_f1 = evaluate(baseline_model, test_df["text"], test_df["label"])
-    eval_hash = compute_eval_hash(test_df)
-    commit = get_git_commit()
-    with mlflow.start_run():
-        info = mlflow.sklearn.log_model(
-            baseline_model,
-            name="model",
-            registered_model_name=MODEL_NAME,
-        )
-        version = info.registered_model_version
-        client = mlflow.MlflowClient()
-        client.set_model_version_tag(MODEL_NAME, version, "test_f1", str(test_f1))
-        client.set_model_version_tag(MODEL_NAME, version, "eval_set_hash", eval_hash)
-        client.set_model_version_tag(MODEL_NAME, version, "schema_version", SCHEMA_VERSION)
-        client.set_model_version_tag(MODEL_NAME, version, "code_commit", commit)
-        return str(version)
+    return register_model_with_dossier(baseline_model, test_df)
 
 
 defs = Definitions(assets=[financial_phrasebank, baseline_model, registered_model])
