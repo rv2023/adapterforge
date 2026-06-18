@@ -121,7 +121,7 @@ Boundaries: NO pretraining, NO RLHF, NO image/VLM. SFT/LoRA + distillation only.
 
 ## Current state (update this section as we go)
 
-- Active milestone: **M4 COMPLETE** — Lineage/Drift/Automated Loop all done & demoed.
+- Active milestone: **M0–M4 COMPLETE; M5 is next.** M4 (Lineage/Drift/Automated Loop) all done & demoed.
   Drift (`pipelines/drift.py` — OOV + hand-rolled PSI/KS + Evidently; regime fixture;
   PSI=16.7); prediction logging (`serving/app.py` → `predictions.jsonl`); Dagster DAG
   (`pipelines/dag.py`); OpenLineage→Marquez lineage (`docker-compose.marquez.yml` +
@@ -130,8 +130,10 @@ Boundaries: NO pretraining, NO RLHF, NO image/VLM. SFT/LoRA + distillation only.
   accept-on-better) + CI artifact `.github/workflows/retrain.yml` (repository_dispatch
   webhook, live in M7). Registration is centralized in `register_model_with_dossier`
   (pipelines/register_baseline.py), reused by dag.py + loop.py (deduped). Usage guide:
-  `docs/USAGE.md`. Session log: `docs/m4-session-notes.md`. **Next: M0 GPU drills,
-  then M5** (LLM fine-tuning + distillation). M3 COMPLETE (gated `/promote` + audit +
+  `docs/USAGE.md`. Session log: `docs/m4-session-notes.md`. **M0 COMPLETE** (GPU
+  foundations done on Colab T4 — CUDA stack, VRAM math, training concepts from scratch;
+  `docs/m0-session-notes.md`). **Next: M5** (QLoRA fine-tune Qwen-1.5B + distillation;
+  costs money — RunPod ~$0.40/hr, confirm $/hr first). M3 COMPLETE (gated `/promote` + audit +
   serving). M2 done (bar = macro-F1 0.6885, C=10). **M1 SDK README still pending** (rule 5).
   Cleanup pending: registry demo cruft (dummy v2 bad-hash + v3–v11 reruns; production=v1);
   Marquez Docker stack may still be running.
