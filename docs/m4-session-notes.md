@@ -1,8 +1,7 @@
-# M4 Session Notes — Lineage, Drift, and the Automated Loop (IN PROGRESS)
+# M4 Session Notes — Lineage, Drift, and the Automated Loop (COMPLETE)
 
-Session: 2026-06-17. Owner: Karthik. Tutor-mode learning.
-**M4 status: ~60% done.** Drift (hand-rolled + Evidently), prediction logging, and
-Dagster orchestration all working. Remaining: Marquez lineage + the trigger chain.
+Sessions: 2026-06-17. Owner: Karthik. Tutor-mode learning.
+**M4 status: COMPLETE — all 5 sub-steps done.** Next: M0 GPU drills, then M5.
 
 ## What M4 is
 
@@ -11,78 +10,68 @@ model goes stale (drift), retrain, re-evaluate, and re-promote through the M3 ga
 zero human action. SRE analogy: drift = health check, trigger chain = auto-remediation
 runbook, M3 gate = admission control that stops the auto-fix making things worse.
 
-## Sub-steps
+## Sub-steps (all done)
 
-| Step | Status | What |
-|---|---|---|
-| M4.1 | ✅ | Drift detection: OOV signal + hand-rolled PSI + KS + regime fixture |
-| M4.2 | ✅ | Evidently drift report (HTML + JSON verdict) |
-| M4.3 | ✅ | Prediction logging (served model → JSONL) |
-| M4.4a | ✅ | Dagster DAG (3 assets: ingest → train → register) |
-| M4.4b | ⬜ | OpenLineage → Marquez lineage (Docker) — NEXT |
-| M4.5 | ⬜ | Trigger chain: drift → webhook → GH Actions retrain → promote gate → auto-promote |
+| Step | What |
+|---|---|
+| M4.1 | Drift: OOV signal + hand-rolled PSI + KS + regime fixture |
+| M4.2 | Evidently `DataDriftPreset` (HTML report + JSON verdict) |
+| M4.3 | Prediction logging (served model → JSONL) |
+| M4.4 | Dagster DAG (3 assets) + OpenLineage→Marquez lineage graph |
+| M4.5 | `loop.py` (drift→retrain→gate→auto-promote) + `retrain.yml` CI artifact |
 
-## What got built this session
+## What got built
 
-- `pipelines/drift.py` — `oov_rate(headline, analyzer, vocab)` (OOV = fraction of a
-  headline's tokens not in the production model's TF-IDF vocab; tokenize with
-  `vectorizer.build_analyzer()`, NOT `.split()`). Hand-rolled `psi(ref, cur, bins=10)`
-  (np.histogram → fractions → epsilon-clamp → PSI formula). `detect_drift()` =
-  PSI + KS (scipy `ks_2samp`); `detect_drift_evidently()` = Evidently `DataDriftPreset`
-  → `docs/drift_report.html` + dict verdict. Loads prod model via
-  `models:/fpb-sentiment@production`.
-- `pipelines/regime_headlines.csv` — ~40 hawkish/QT/crypto headlines (quoted CSV) to
-  simulate a regime change.
-- `serving/app.py` — added `log_prediction()` → `serving/predictions.jsonl`
-  (text, label, confidence, model_version, ts) on every `/predict`.
-- `pipelines/dag.py` — Dagster: assets `financial_phrasebank` → `baseline_model` →
-  `registered_model` (each wraps M1/M2/M3 code). Run: `dagster dev -f pipelines/dag.py`
-  (UI :3000), Materialize all.
+- `pipelines/drift.py` — `oov_rate` (tokenize via `build_analyzer()`), hand-rolled `psi`,
+  `detect_drift` (PSI+KS scipy), `detect_drift_evidently` (→ `docs/drift_report.html`).
+- `pipelines/regime_headlines.csv` — ~40 hawkish/QT/crypto headlines (quoted CSV).
+- `serving/app.py` — `log_prediction` → `serving/predictions.jsonl` per `/predict`.
+- `pipelines/dag.py` — Dagster assets financial_phrasebank→baseline_model→registered_model.
+  (`sys.path.insert(pipelines)` for imports; Dagster enforces return type annotations.)
+- `docker-compose.marquez.yml` — Marquez stack (db 6543, api 5000, web 3001). Web needs
+  `MARQUEZ_HOST=marquez-api` (server-side proxy) + `WEB_PORT=3000`.
+- `pipelines/lineage.py` — emits OpenLineage events (Job/Run/Dataset) → Marquez graph.
+- `pipelines/loop.py` — the loop: `drift_detected()` → `retrain_and_register()` →
+  `request_promotion()` (POST control-plane /promote). Robust version lookup via
+  `search_model_versions` + max (info.registered_model_version was flaky/None).
+- `.github/workflows/retrain.yml` — CI artifact: `repository_dispatch` webhook →
+  runs `loop.py`. Fully live in M7 (remote MLflow + control plane via secrets).
 
-## Key results / numbers
+## Verified (the demo)
 
-- Drift on regime batch: mean OOV ref 0.084 vs current 0.477; **PSI 16.7** (>>0.2),
-  KS p 7.6e-34 → DRIFT yes. Evidently auto-picked KS, p-value matched the hand-roll
-  exactly. Evidently dataset verdict: `DriftedColumnsCount` share 1.0 ≥ 0.5 →
-  the field M4.5's loop reads: `result["metrics"][0]["value"]["count"] > 0`.
-- Disagreement demo (case 1): tiny 0.015 shift + 8000 samples → PSI 0.026 (no drift)
-  but KS p 4.5e-18 (significant) → why the trigger uses PSI magnitude, not KS p.
+- Drift on regime batch: mean OOV ref 0.084 vs current 0.477; **PSI 16.7**, KS p 7.6e-34
+  → DRIFT yes. Evidently auto-picked KS, matched the hand-roll.
+- PSI/KS disagreement (case 1): tiny 0.015 shift + 8000 samples → PSI 0.026 (no) but
+  KS p 4.5e-18 (yes) → why the trigger uses PSI magnitude, not KS p.
+- Marquez lineage graph renders: huggingface.flare-fpb → ingest → silver → train →
+  model.baseline → register → model.fpb-sentiment.
+- **Loop, both paths:** reject path (loop.py retrain not better → gate 409, prod safe);
+  accept path (simulated-better v with correct hash, F1 0.75 → gate 200 promoted →
+  production flipped → first `"promoted"` audit line with previous_production=1). Then
+  production reverted to the real v1 baseline for a clean state.
 
 ## Concepts Karthik now owns
 
-- Drift = compare REFERENCE (training-time) vs CURRENT (live) distributions of a
-  signal; threshold → alert.
-- Signal vs test: OOV = the signal (a leading INPUT indicator); PSI/KS = tests on it.
-  OOV is leading (cause), confidence/class-mix are lagging (effects).
-- PSI = magnitude; KS = max-gap + significance (sample-size sensitive). When they
-  disagree: KS-significant-but-PSI-low = trivial-but-real at scale (trust PSI);
-  PSI-high-but-KS-not = too-small sample (distrust). Trigger on PSI > 0.2.
-- Other metrics: Wasserstein, JSD, KL (PSI ≈ binned symmetric KL), chi-square,
-  embedding/domain-classifier drift. Combination = signals × tests → aggregate.
-- OOV tokenization must match TF-IDF (`build_analyzer()`); epsilon in PSI avoids log0.
-- Prediction logging = monitoring data; synchronous-per-request adds latency →
-  production uses async/queue/log-pipeline (observability shouldn't slow the system).
-- Dagster: asset-based orchestration; deps via param names; enforces return type
-  annotations at runtime (caught int-vs-str). `dagster dev -f`.
-- OpenLineage data model (for next session): Job, Run, Dataset; events wire
-  dataset→job→dataset; Marquez draws the graph.
+- Drift = ref vs current distributions; signal (OOV, leading INPUT indicator) vs test
+  (PSI magnitude / KS significance); disagreement cases; other metrics (Wasserstein/
+  JSD/KL/chi2/embedding). Tokenize like TF-IDF; epsilon in PSI.
+- Prediction-logging tradeoff (sync vs async). Dagster assets + runtime type checks.
+- Marquez = lineage store/viewer (receives OpenLineage events, builds the graph);
+  OpenLineage = the standard; Dagster = the executor. Linked by matching dataset names.
+- The loop: drift → retrain → gate → auto-promote ONLY if better; webhook =
+  repository_dispatch; one body (loop.py) runs both locally and in CI.
+- **Train data changes on retrain; the EVAL set stays frozen → hash unchanged → fair
+  comparison. Updating the exam is a rare, deliberate, governed event (bump
+  EXPECTED_HASH + re-baseline), which the hash gate forces you to do consciously.**
+- Use case: live news feed (Alpha Vantage adapter) → /predict → logged → drift loop.
+  LLM (M5) enters through the SAME gate, served by the SAME endpoint. 2 LLM adapters
+  (on one Qwen base) + 1 DistilBERT student + baseline; M8 router picks cheap vs LLM.
 
-## Resume next session (M4.4b + M4.5)
+## Open threads / next
 
-1. **Marquez lineage:** stand up Marquez in Docker (multi-container: Postgres + API
-   :5000 + web). PORT CONFLICTS to manage — Marquez web wants :3000 (Dagster) and API
-   wants :5000 (MLflow UI); remap (e.g. web → :3001). Then emit OpenLineage events for
-   the pipeline (manual `openlineage-python` client is the robust path) → view graph.
-2. **M4.5 trigger chain:** drift verdict → webhook → GitHub Actions `retrain.yml` →
-   Dagster retrain → control-plane `/promote` gate → auto-promote only if better.
-   The M3 promote API is the gate this loop calls.
-
-## Open threads
-
-- Commit M4 work (Karthik's commits): `pipelines/drift.py`, `regime_headlines.csv`,
-  `pipelines/dag.py`, `serving/app.py` changes. `.gitignore`: add
-  `docs/drift_report.html`, `serving/predictions.jsonl`.
-- Registry now has dummy v2 (bad hash) + v3/v4 (Dagster re-runs) — clean up or leave.
+- Commit M4 work + `.gitignore` (drift_report.html, predictions.jsonl, mlflow.db,
+  mlruns/, data/, audit.jsonl). Registry has demo cruft (dummy v2 bad-hash, v3–v11 from
+  reruns); production = v1 (clean). Marquez stack still running in Docker (stop with
+  `docker compose -f docker-compose.marquez.yml down` when not needed).
 - M1 SDK README still pending (rule 5).
-- pip installs this session: scikit-learn (earlier), mlflow, fastapi/uvicorn,
-  requests, matplotlib, evidently (0.7.21), dagster + dagster-webserver, scipy (via sklearn).
+- **Next milestone: M0 GPU drills, then M5** (LLM fine-tuning + distillation).

@@ -1,0 +1,45 @@
+# M4.5 — automated retraining triggered by a drift alert.
+#
+# THE LOOP:  drift detected -> webhook (repository_dispatch) -> THIS workflow ->
+#            retrain + register a candidate -> control-plane /promote gate ->
+#            auto-promote ONLY if better.  Zero human action.
+#
+# NOTE: GitHub's cloud runners cannot reach a LOCAL MLflow/control plane. This
+# workflow becomes fully live in M7, when MLflow + the control plane are remote
+# (their URLs supplied as repo secrets below). Until then, `pipelines/loop.py`
+# is the runnable, local proof of the same chain.
+name: retrain
+
+on:
+  # the webhook: the drift job POSTs a repository_dispatch event to fire this.
+  #   curl -X POST https://api.github.com/repos/<owner>/<repo>/dispatches \
+  #        -H "Authorization: token $GH_TOKEN" \
+  #        -d '{"event_type":"drift-detected"}'
+  repository_dispatch:
+    types: [drift-detected]
+  # also runnable by hand from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  retrain-and-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ./adapter-sdk
+          pip install scikit-learn mlflow requests pandas scipy
+
+      - name: Retrain → register → ask the gate to promote
+        env:
+          # In M7 these point at the REMOTE MLflow registry + control plane.
+          # loop.py should read these instead of the hardcoded local values.
+          MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
+          CONTROL_PLANE_URL: ${{ secrets.CONTROL_PLANE_URL }}
+        run: python pipelines/loop.py

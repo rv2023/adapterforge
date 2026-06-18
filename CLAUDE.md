@@ -121,16 +121,18 @@ Boundaries: NO pretraining, NO RLHF, NO image/VLM. SFT/LoRA + distillation only.
 
 ## Current state (update this section as we go)
 
-- Active milestone: **M4 IN PROGRESS (~60%)** — Lineage/Drift/Automated Loop.
-  Done: drift detection (`pipelines/drift.py` — OOV signal, hand-rolled PSI + KS, then
-  Evidently `DataDriftPreset`; regime fixture `pipelines/regime_headlines.csv`; regime
+- Active milestone: **M4 COMPLETE** — Lineage/Drift/Automated Loop all done & demoed.
+  Drift (`pipelines/drift.py` — OOV + hand-rolled PSI/KS + Evidently; regime fixture;
   PSI=16.7); prediction logging (`serving/app.py` → `predictions.jsonl`); Dagster DAG
-  (`pipelines/dag.py` — assets ingest→train→register, `dagster dev -f pipelines/dag.py`).
-  **Remaining: OpenLineage→Marquez lineage (Docker, port conflicts to manage) + the
-  trigger chain (drift→webhook→GH Actions retrain→/promote gate→auto-promote).** Session
-  log: `docs/m4-session-notes.md`. M3 COMPLETE (control plane: gated `/promote` + audit +
-  serving). M2 done (bar = macro-F1 0.6885, C=10). M0 (GPU drills) before M5.
-  **M1 SDK README still pending** (rule 5).
+  (`pipelines/dag.py`); OpenLineage→Marquez lineage (`docker-compose.marquez.yml` +
+  `pipelines/lineage.py`, graph renders); the self-healing loop (`pipelines/loop.py` —
+  drift→retrain→/promote gate→auto-promote; BOTH paths proven: reject-if-not-better and
+  accept-on-better) + CI artifact `.github/workflows/retrain.yml` (repository_dispatch
+  webhook, live in M7). Session log: `docs/m4-session-notes.md`. **Next: M0 GPU drills,
+  then M5** (LLM fine-tuning + distillation). M3 COMPLETE (gated `/promote` + audit +
+  serving). M2 done (bar = macro-F1 0.6885, C=10). **M1 SDK README still pending** (rule 5).
+  Cleanup pending: registry demo cruft (dummy v2 bad-hash + v3–v11 reruns; production=v1);
+  Marquez Docker stack may still be running.
 - Decisions log: PIMCO/financial scope; Dagster over Airflow; **pip+venv used**
   (uv deferred — Karthik chose pip fallback); FPB via `ChanceFocus/flare-fpb`
   Parquet mirror (canonical script dataset fails on datasets 5.0); REST =
