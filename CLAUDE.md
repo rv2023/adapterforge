@@ -127,9 +127,13 @@ Boundaries: NO pretraining, NO RLHF, NO image/VLM. SFT/LoRA + distillation only.
   (2) QLoRA training script (`pipelines/finetune.py`, TRL `SFTTrainer` + PEFT, dev/real switch via
   `MODEL_NAME`/`USE_4BIT`/`MAX_STEPS`) — CPU smoke test PASSED (loss fell, 34 MB adapter saved).
   LLM deps added to `requirements.txt` (torch CPU/transformers/peft/trl/accelerate; bitsandbytes Colab-only).
-  **Next: real run on free Colab T4** (4-bit Qwen-1.5B, full epochs, MLflow loss curve — the deferred
-  MLflow-logging item), then eval adapter macro-F1 vs 0.6885 on sealed test set. Then Piece 2
-  (bf16 efficiency experiment), Piece 3 (Ray/NCCL on RunPod), Piece 5 (distillation).
+  (3) **REAL Colab T4 run DONE** (4-bit Qwen-1.5B, batch 16, 3 epochs, ~60 min) — mild overfit at
+  epoch 3 (eval_loss 1.079→1.113) but fine. (4) **Eval (`pipelines/eval_adapter.py`, generative
+  classifier: PeftModel + chat-template + greedy generate + parse word + macro-F1) DONE → macro-F1
+  = 0.8477, BEATS the 0.6885 baseline by ~16 pts.** Core Piece-1 deliverable met. Adapter downloaded
+  off Colab (ephemeral box). **Next: register the adapter via control plane (M3 dossier: test_f1,
+  eval_set_hash) / run it through the gated /promote**, then Piece 2 (bf16 efficiency experiment,
+  the JD "5%"), Piece 3 (Ray/NCCL on RunPod), Piece 5 (distillation).
   M0–M4 COMPLETE. M4 (Lineage/Drift/Automated Loop) all done & demoed.
   Drift (`pipelines/drift.py` — OOV + hand-rolled PSI/KS + Evidently; regime fixture;
   PSI=16.7); prediction logging (`serving/app.py` → `predictions.jsonl`); Dagster DAG
