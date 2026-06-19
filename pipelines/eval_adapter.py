@@ -45,10 +45,10 @@ def predict_one(model, tokenizer, messages) -> str:
     `messages` is the chat WITHOUT the assistant turn.
     """
     ids = tokenizer.apply_chat_template(
-        messages, add_generation_prompt=True, return_tensors="pt"
+        messages, add_generation_prompt=True, return_tensors="pt", return_dict=True
     ).to(model.device)
-    prompt_len = ids.shape[-1]
-    out = model.generate(ids, max_new_tokens=5, do_sample=False)
+    prompt_len = ids["input_ids"].shape[-1]
+    out = model.generate(**ids, max_new_tokens=5, do_sample=False)
     text = tokenizer.decode(out[0, prompt_len:], skip_special_tokens=True).strip().lower()
     for label in LABELS:
         if text == label or text.startswith(label):
