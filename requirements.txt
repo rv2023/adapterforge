@@ -20,3 +20,12 @@ evidently==0.7.21          # 0.7.x API (Report/Dataset/DataDefinition/DataDriftP
 dagster
 dagster-webserver
 openlineage-python
+
+# M5 — LLM fine-tuning (QLoRA). CPU torch installs here for the smoke test;
+# bitsandbytes is CUDA-only -> install that on Colab, NOT on this box.
+torch
+transformers
+peft
+trl
+accelerate
+# bitsandbytes            # GPU-only; Colab/RunPod only, do not install locally

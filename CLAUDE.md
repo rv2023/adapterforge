@@ -121,7 +121,16 @@ Boundaries: NO pretraining, NO RLHF, NO image/VLM. SFT/LoRA + distillation only.
 
 ## Current state (update this section as we go)
 
-- Active milestone: **M0–M4 COMPLETE; M5 is next.** M4 (Lineage/Drift/Automated Loop) all done & demoed.
+- Active milestone: **M5 IN PROGRESS (Piece 1).** Steps done: (1) instruction-format
+  (`pipelines/instruction_format.py` → `data/instruction/{train,val,test}.jsonl`, chat-messages
+  format, reuses M2 `split_data` so test set is bitwise-identical to the 0.6885 frozen set);
+  (2) QLoRA training script (`pipelines/finetune.py`, TRL `SFTTrainer` + PEFT, dev/real switch via
+  `MODEL_NAME`/`USE_4BIT`/`MAX_STEPS`) — CPU smoke test PASSED (loss fell, 34 MB adapter saved).
+  LLM deps added to `requirements.txt` (torch CPU/transformers/peft/trl/accelerate; bitsandbytes Colab-only).
+  **Next: real run on free Colab T4** (4-bit Qwen-1.5B, full epochs, MLflow loss curve — the deferred
+  MLflow-logging item), then eval adapter macro-F1 vs 0.6885 on sealed test set. Then Piece 2
+  (bf16 efficiency experiment), Piece 3 (Ray/NCCL on RunPod), Piece 5 (distillation).
+  M0–M4 COMPLETE. M4 (Lineage/Drift/Automated Loop) all done & demoed.
   Drift (`pipelines/drift.py` — OOV + hand-rolled PSI/KS + Evidently; regime fixture;
   PSI=16.7); prediction logging (`serving/app.py` → `predictions.jsonl`); Dagster DAG
   (`pipelines/dag.py`); OpenLineage→Marquez lineage (`docker-compose.marquez.yml` +

@@ -43,6 +43,9 @@ control-plane/audit.jsonl
 serving/predictions.jsonl
 docs/drift_report.html
 
+# Model artifacts (M5) — trained LoRA adapters + training checkpoints (regenerable, large)
+/models/
+
 # OS / editor
 .DS_Store
 .idea/
