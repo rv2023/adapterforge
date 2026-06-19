@@ -9,6 +9,7 @@ assistant turn left for the model to generate. Greedy decoding, parse the word.
 """
 
 import json
+from pathlib import Path
 
 import torch
 from peft import PeftModel
@@ -56,7 +57,8 @@ def predict_one(model, tokenizer, messages) -> str:
     return "unknown"
 
 
-def main():
+def main() -> float:
+    """Eval the adapter, persist the score next to it, and RETURN macro-F1."""
     model, tokenizer = load_model_and_tokenizer()
     golds = []
     preds = []
@@ -68,7 +70,10 @@ def main():
             preds.append(predict_one(model, tokenizer, messages[:-1]))
 
     macro_f1 = f1_score(golds, preds, average="macro", labels=LABELS)
+    with (Path(ADAPTER_DIR) / "eval_metrics.json").open("w", encoding="utf-8") as f:
+        json.dump({"test_f1": macro_f1, "n_test": len(golds)}, f)
     print(f"macro_f1={macro_f1:.4f} baseline={BASELINE_F1:.4f} beat_bar={macro_f1 > BASELINE_F1}")
+    return macro_f1
 
 
 if __name__ == "__main__":

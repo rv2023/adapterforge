@@ -20,7 +20,7 @@ from dagster import Definitions, asset
 
 from adapter_sdk.adapters.hf import HFDatasetAdapter
 from baseline import build_model, load_data, split_data
-from register_baseline import BEST_C, register_model_with_dossier
+from register_baseline import BEST_C, register_sklearn
 
 
 @asset
@@ -46,7 +46,7 @@ def baseline_model(financial_phrasebank: str):
 def registered_model(baseline_model) -> str:
     """Register the trained model with its dossier in MLflow. Returns the version."""
     _, _, test_df = split_data(load_data())
-    return register_model_with_dossier(baseline_model, test_df)
+    return register_sklearn(baseline_model, test_df)
 
 
 defs = Definitions(assets=[financial_phrasebank, baseline_model, registered_model])

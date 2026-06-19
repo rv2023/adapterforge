@@ -130,10 +130,22 @@ Boundaries: NO pretraining, NO RLHF, NO image/VLM. SFT/LoRA + distillation only.
   (3) **REAL Colab T4 run DONE** (4-bit Qwen-1.5B, batch 16, 3 epochs, ~60 min) — mild overfit at
   epoch 3 (eval_loss 1.079→1.113) but fine. (4) **Eval (`pipelines/eval_adapter.py`, generative
   classifier: PeftModel + chat-template + greedy generate + parse word + macro-F1) DONE → macro-F1
-  = 0.8477, BEATS the 0.6885 baseline by ~16 pts.** Core Piece-1 deliverable met. Adapter downloaded
-  off Colab (ephemeral box). **Next: register the adapter via control plane (M3 dossier: test_f1,
-  eval_set_hash) / run it through the gated /promote**, then Piece 2 (bf16 efficiency experiment,
-  the JD "5%"), Piece 3 (Ray/NCCL on RunPod), Piece 5 (distillation).
+  = 0.8477, BEATS the 0.6885 baseline by ~16 pts.** Core Piece-1 deliverable met. (5) **REGISTER +
+  PROMOTE DONE — Piece 1 fully closed.** Adapter registered as `fpb-sentiment` **v14** with a real
+  dossier (test_f1=0.8477; eval_set_hash recomputed fresh on laptop, matches the gate's pinned
+  EXPECTED_HASH bit-for-bit; schema v1; commit 00e8af4), then **promoted through the gated /promote
+  (approved_by=karthik) → LLM is now production** (audit line: previous_production=1, the sklearn
+  baseline it dethroned). Code: refactored `register_baseline.py` into model-agnostic
+  `register_model_with_dossier(test_df, test_f1, log_and_register)` + thin `register_sklearn` wrapper
+  (callers in loop.py/dag.py updated) + new `register_adapter` (reads `models/fpb-lora/eval_metrics.json`,
+  n_test cross-check, logs adapter via `log_artifacts` + `MlflowClient.create_model_version` — MLflow 3.x
+  `register_model("runs:/…")` needs a *logged model*, raw artifacts don't qualify). `eval_adapter.py`
+  `main()` now returns the f1 + writes `eval_metrics.json` so future evals auto-emit it (the v14 json
+  was hand-written before this change). **Known next domino (M6, not a bug):** loop.py:30 + serving/app.py
+  use `mlflow.sklearn.load_model` → fail against the LLM production model (`No such artifact: 'MLmodel'`,
+  confirmed); making serving/drift model-aware is M6/M8. Break is runtime-only (prod alias in gitignored
+  mlflow.db); committed code is clean. **Next: Piece 2** (bf16 efficiency experiment, the JD "5%"),
+  Piece 3 (Ray/NCCL on RunPod), Piece 5 (distillation).
   M0–M4 COMPLETE. M4 (Lineage/Drift/Automated Loop) all done & demoed.
   Drift (`pipelines/drift.py` — OOV + hand-rolled PSI/KS + Evidently; regime fixture;
   PSI=16.7); prediction logging (`serving/app.py` → `predictions.jsonl`); Dagster DAG
@@ -148,8 +160,9 @@ Boundaries: NO pretraining, NO RLHF, NO image/VLM. SFT/LoRA + distillation only.
   `docs/m0-session-notes.md`). **Next: M5** (QLoRA fine-tune Qwen-1.5B + distillation;
   costs money — RunPod ~$0.40/hr, confirm $/hr first). M3 COMPLETE (gated `/promote` + audit +
   serving). M2 done (bar = macro-F1 0.6885, C=10). **M1 SDK README still pending** (rule 5).
-  Cleanup pending: registry demo cruft (dummy v2 bad-hash + v3–v11 reruns; production=v1);
-  Marquez Docker stack may still be running.
+  Cleanup pending: registry demo cruft (dummy v2 bad-hash + v3–v13 reruns; **production=v14, the LLM**);
+  Marquez Docker stack may still be running. Trained adapter (`models/fpb-lora/`) lives only on the
+  laptop + as the v14 MLflow artifact; `models/` gitignored — still need a real home (DVC/S3).
 - Decisions log: PIMCO/financial scope; Dagster over Airflow; **pip+venv used**
   (uv deferred — Karthik chose pip fallback); FPB via `ChanceFocus/flare-fpb`
   Parquet mirror (canonical script dataset fails on datasets 5.0); REST =

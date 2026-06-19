@@ -15,6 +15,7 @@ DAG (dag.py) and the retrain loop (loop.py) both reuse this so the dossier is
 created exactly one way, everywhere.
 """
 
+import json
 import hashlib
 import subprocess
 from pathlib import Path
@@ -54,21 +55,21 @@ def get_git_commit() -> str:
     return result.stdout.strip()
 
 
-def register_model_with_dossier(model, test_df: pd.DataFrame) -> str:
-    """Score `model` on the frozen TEST set, register it, attach its dossier.
+def register_model_with_dossier(test_df: pd.DataFrame, test_f1: float, log_and_register) -> str:
+    """Register a NEW version under MODEL_NAME and stamp its dossier. Model-agnostic.
 
-    The ONE place a candidate gets registered. Returns the new registry version
-    (as a string). Used by the standalone script, the Dagster DAG, and the loop.
+    test_f1:          the score, precomputed by the caller (the gate trusts this tag).
+    log_and_register: zero-arg callable that logs the artifact AND registers a new
+                      version under MODEL_NAME. Sklearn and LLM pass different ones.
     """
     mlflow.set_tracking_uri(f"sqlite:///{_DB}")
     mlflow.set_experiment(EXPERIMENT)
 
-    test_f1 = evaluate(model, test_df["text"], test_df["label"])
     eval_hash = compute_eval_hash(test_df)
     commit = get_git_commit()
 
     with mlflow.start_run():
-        mlflow.sklearn.log_model(model, name="model", registered_model_name=MODEL_NAME)
+        log_and_register()
         client = mlflow.MlflowClient()
         # query the registry for the version we just created (robust: the
         # log_model return's registered_model_version can be None / lag)
@@ -85,12 +86,50 @@ def register_model_with_dossier(model, test_df: pd.DataFrame) -> str:
     return str(version)
 
 
+def register_sklearn(model, test_df: pd.DataFrame) -> str:
+    """The old sklearn path, expressed through the agnostic core."""
+    return register_model_with_dossier(
+        test_df,
+        evaluate(model, test_df["text"], test_df["label"]),
+        lambda: mlflow.sklearn.log_model(
+            model, name="model", registered_model_name=MODEL_NAME
+        ),
+    )
+
+
+def register_adapter(adapter_dir, test_df: pd.DataFrame) -> str:
+    """Register a trained LoRA adapter as a new fpb-sentiment version + dossier."""
+    adapter_dir = Path(adapter_dir)
+    metrics_path = adapter_dir / "eval_metrics.json"
+    with metrics_path.open() as f:
+        metrics = json.load(f)
+
+    test_f1 = metrics["test_f1"]
+    n_test = metrics["n_test"]
+    expected_n_test = len(test_df)
+    if n_test != expected_n_test:
+        raise ValueError(
+            f"Adapter eval metrics n_test mismatch in {metrics_path}: "
+            f"metrics n_test={n_test}, test_df rows={expected_n_test}"
+        )
+
+    def log_and_register():
+        mlflow.log_artifacts(str(adapter_dir), "adapter")
+        run_id = mlflow.active_run().info.run_id
+        source = mlflow.get_artifact_uri("adapter")
+        mlflow.MlflowClient().create_model_version(
+            name=MODEL_NAME, source=source, run_id=run_id
+        )
+
+    return register_model_with_dossier(test_df, test_f1, log_and_register)
+
+
 def register_baseline() -> None:
     """Train the locked baseline and register it with its dossier (M3.1 bootstrap)."""
     train_df, _val_df, test_df = split_data(load_data())
     model = build_model(BEST_C)
     model.fit(train_df["text"], train_df["label"])
-    version = register_model_with_dossier(model, test_df)
+    version = register_sklearn(model, test_df)
     print(f"Registered {MODEL_NAME} version {version} with dossier.")
 
 

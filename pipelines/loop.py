@@ -18,7 +18,7 @@ import requests
 
 from baseline import build_model, load_data, split_data
 from drift import PSI_THRESHOLD, REGIME_CSV, oov_rate, psi
-from register_baseline import BEST_C, MODEL_NAME, register_model_with_dossier
+from register_baseline import BEST_C, MODEL_NAME, register_sklearn
 
 CONTROL_PLANE = "http://127.0.0.1:8000"
 _DB = Path(__file__).resolve().parent.parent / "mlflow.db"
@@ -43,7 +43,7 @@ def retrain_and_register() -> str:
     train_df, _, test_df = split_data(load_data())
     model = build_model(BEST_C)
     model.fit(train_df["text"], train_df["label"])
-    return register_model_with_dossier(model, test_df)
+    return register_sklearn(model, test_df)
 
 
 def request_promotion(version: str) -> requests.Response:

@@ -1,9 +1,66 @@
-# M5 Session Notes — LLM Fine-Tuning (Piece 1 core: DONE)
+# M5 Session Notes — LLM Fine-Tuning (Piece 1: DONE — registered + promoted)
 
 Sessions: 2026-06-18/19. Owner: Karthik. Tutor-mode learning.
-**M5 Piece 1 status: CORE DONE — QLoRA adapter beats the M2 baseline.**
-macro-F1 **0.8477** vs baseline **0.6885** (same sealed test set). Next: register/
-promote the adapter, then Pieces 2 (efficiency), 3 (Ray/NCCL), 5 (distillation).
+**M5 Piece 1 status: FULLY DONE — QLoRA adapter beats the baseline AND is now governed
+production.** macro-F1 **0.8477** vs baseline **0.6885** (same sealed test set); registered
+as `fpb-sentiment` v14 and promoted through the M3 gate → LLM is production. Next: Pieces 2
+(efficiency), 3 (Ray/NCCL), 5 (distillation).
+
+## Session 3 (2026-06-19) — register + promote the adapter (Piece 1 close)
+
+Goal: govern the LLM like any production model — register it with a dossier, push it
+through the gated `/promote`. All laptop work, no GPU.
+
+**What got built / changed:**
+- `models/fpb-lora/eval_metrics.json` = `{"test_f1": 0.8477, "n_test": 465}` — the F1 is now
+  a persisted artifact next to the adapter, not a number remembered off ephemeral Colab.
+- `eval_adapter.py` — `main()` now RETURNS the f1 and writes `eval_metrics.json` (full precision,
+  no rounding — it's a stored measurement) so future evals auto-emit it. The v14 json was
+  hand-written before this change (no GPU here to re-run the eval).
+- `register_baseline.py` refactored (option A — parametrize, less duplication):
+  - `register_model_with_dossier(test_df, test_f1, log_and_register)` — model-agnostic core.
+    Computes eval_hash + commit, opens the run, calls the caller's log+register callback,
+    stamps the 4 dossier tags. (Signature changed from `(model, test_df)`.)
+  - `register_sklearn(model, test_df)` — thin wrapper: passes `evaluate(...)` + a sklearn
+    log lambda. Existing callers (`register_baseline`, `loop.py:46`, `dag.py:49`) updated to it.
+  - `register_adapter(adapter_dir, test_df)` — reads eval_metrics.json, **n_test cross-check**
+    (explicit `raise ValueError`, not bare assert), logs the adapter dir as artifacts, registers
+    via `MlflowClient.create_model_version`.
+- Cleaned `models/fpb-lora/`: removed the redundant download zip, its `:Zone.Identifier`
+  sidecar, and `checkpoint-2/` (training scratch). Kept adapter + tokenizer + chat_template.
+
+**Trust-boundary design (the key idea this session):** split *who produces what*. Colab (GPU,
+ephemeral) produces only the unreproducible measurement (`test_f1`). The laptop (durable
+system-of-record) recomputes the integrity-critical, deterministic value (`eval_set_hash`)
+fresh from `split_data` — never trusts a hash off the remote box. So a stale/wrong Colab file
+can't sneak a wrong exam past the gate; `n_test==465` is the cheap cross-check.
+
+**MLflow 3.x gotcha (hit + fixed):** `mlflow.register_model("runs:/<run>/adapter", NAME)` raises
+`Unable to find a logged_model with artifact_path adapter` — 3.x expects a first-class *logged
+model* (MLmodel descriptor + flavor), which `log_artifacts` does NOT create. Fix: lower-level
+`MlflowClient().create_model_version(name, source=get_artifact_uri("adapter"), run_id=...)` —
+the "register externally-produced artifacts as a version" path. No serving wrapper needed (that's M6).
+
+**Verified:**
+- v14 dossier: test_f1 0.8477, eval_set_hash == EXPECTED_HASH (bit-for-bit), schema v1, commit 00e8af4.
+- Gate prediction (all 4 pass) → `/promote` returned 200 `{"promoted":"14"}`. Production flipped
+  1→14. Audit line `"decision":"promoted","previous_production":1,"approved_by":"karthik"`.
+- **Break-it (rule 4), predicted then confirmed:** ran `loop.py` against the LLM production model
+  → `MlflowException: No such artifact: 'MLmodel'` at loop.py:30. The sklearn loader dies before
+  even reaching `named_steps["tfidf"]`. NOT a bug — the system surfacing that serving + drift are
+  model-aware and assume sklearn. Making them model-aware = M6 (vLLM/LoRA load) + M8 (router/drift).
+  Break is runtime-only (prod alias in gitignored mlflow.db); committed code is clean.
+
+**Concepts reinforced:** the gate reads only tags (never loads the model / recomputes F1) → the
+**hash gate is the real teeth against the *realistic* failure (comparing models scored on different
+exams)**, NOT against a deliberately fabricated F1 (for that you'd recompute the score in the control
+plane, or lock down who can write tags). Recompute invariants (hash), trust measurements (F1) but
+anchor them to a verified exam. Stateless compute (Colab) vs stateful governance (registry/audit) —
+why training runs on throwaway GPU but promotion must run where the durable system-of-record lives;
+M7 makes both real cluster services.
+
+**Decision:** keep v14 as production (it's the real Piece-1 deliverable — "the LLM IS production"),
+unlike M4 which reverted its *fake* 0.75 demo model. loop.py/serving stay sklearn-only until M6.
 
 ## What M5 Piece 1 is
 
