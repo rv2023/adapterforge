@@ -17,6 +17,7 @@ placement. If num_workers=2 errors on placement, fall back to plain LoRA bf16 (U
 """
 
 import sys
+from pathlib import Path
 
 import ray
 from ray.train import ScalingConfig
@@ -35,7 +36,9 @@ from pipelines.finetune import build_lora_config
 # --- held constant across the 1-GPU and 2-GPU runs ---
 MODEL_NAME = "Qwen/Qwen2.5-1.5B-Instruct"
 USE_4BIT = True            # real QLoRA recipe; flip to False if 4-bit+DDP fights us
-DATA_DIR = "data/instruction"
+# ABSOLUTE path — Ray changes each worker's CWD to its own session dir, so a relative
+# path would resolve under /tmp/ray/... and not find the data. Anchor to the repo via __file__.
+DATA_DIR = str(Path(__file__).resolve().parents[1] / "data" / "instruction")
 PER_DEVICE_BATCH = 8       # per-GPU batch — HELD CONSTANT so 2 GPUs = 2x data/step (weak scaling)
 MAX_STEPS = 60             # short burst; we want throughput, not a model
 
