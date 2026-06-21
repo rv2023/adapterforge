@@ -1,0 +1,756 @@
+=== Ray Train: 2 GPUs ===
+2026-06-21 20:55:52,827	WARNING utils.py:461 -- Detecting docker specified CPUs. In previous versions of Ray, CPU detection in containers was incorrect. Please ensure that Ray has enough CPUs allocated. As a temporary workaround to revert to the prior behavior, set `RAY_USE_MULTIPROCESSING_CPU_COUNT=1` as an env var before starting Ray. Set the env var: `RAY_DISABLE_DOCKER_CPU_WARNING=1` to mute this warning.
+2026-06-21 20:55:52,827	WARNING utils.py:473 -- Ray currently does not support initializing Ray with fractional cpus. Your num_cpus will be truncated from 16.15 to 16.
+2026-06-21 20:55:56,112	INFO worker.py:2012 -- Started a local Ray instance.
+/tmp/af-venv/lib/python3.12/site-packages/ray/_private/worker.py:2051: FutureWarning: Tip: In future versions of Ray, Ray will no longer override accelerator visible devices env var if num_gpus=0 or num_gpus=None (default). To enable this behavior and turn off this error message, set RAY_ACCEL_ENV_VAR_OVERRIDE_ON_ZERO=0
+  warnings.warn(
+[36m(TrainController pid=6702)[0m Requesting resources: {'GPU': 1} * 2
+[36m(TrainController pid=6702)[0m Attempting to start training worker group of size 2 with the following resources: [{'GPU': 1}] * 2
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(RayTrainWorker pid=6866)[0m Setting up process group for: env:// [rank=0, world_size=2]
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(TrainController pid=6702)[0m Started training worker group of size 2: 
+[36m(TrainController pid=6702)[0m - (ip=172.16.144.2, pid=6866) world_rank=0, local_rank=0, node_rank=0
+[36m(TrainController pid=6702)[0m - (ip=172.16.144.2, pid=6867) world_rank=1, local_rank=1, node_rank=0
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(RayTrainWorker pid=6866)[0m HTTP Request: HEAD https://s3.amazonaws.com/datasets.huggingface.co/datasets/datasets/json/json.py "HTTP/1.1 200 OK"
+[36m(RayTrainWorker pid=6866)[0m HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+[36m(RayTrainWorker pid=6867)[0m Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[36m(RayTrainWorker pid=6867)[0m Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[36m(RayTrainWorker pid=6866)[0m HTTP Request: GET https://huggingface.co/api/models/Qwen/Qwen2.5-1.5B-Instruct/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(RayTrainWorker pid=6866)[0m HTTP Request: GET https://huggingface.co/api/models/Qwen/Qwen2.5-1.5B-Instruct/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(RayTrainWorker pid=6866)[0m Loading weights:   0%|          | 0/338 [00:00<?, ?it/s]
+[36m(RayTrainWorker pid=6866)[0m Loading weights:   1%|          | 3/338 [00:00<00:14, 23.22it/s]
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(RayTrainWorker pid=6866)[0m Loading weights:  12%|█▏        | 40/338 [00:00<00:01, 204.66it/s]
+[36m(RayTrainWorker pid=6866)[0m Loading weights:  27%|██▋       | 92/338 [00:00<00:00, 338.91it/s]
+[36m(RayTrainWorker pid=6866)[0m Loading weights:  44%|████▍     | 148/338 [00:00<00:00, 420.31it/s]
+[36m(RayTrainWorker pid=6866)[0m Loading weights:  93%|█████████▎| 315/338 [00:00<00:00, 497.48it/s]
+[36m(RayTrainWorker pid=6867)[0m HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen2.5-1.5B-Instruct/989aa7980e4cf806f80c7fef2b1adb7bc71aa306/config.json "HTTP/1.1 200 OK"[32m [repeated 9x across cluster] (Ray deduplicates logs by default. Set RAY_DEDUP_LOGS=0 to disable log deduplication, or see https://docs.ray.io/en/master/ray-observability/user-guides/configure-logging.html#log-deduplication for more options.)[0m
+[36m(RayTrainWorker pid=6866)[0m Loading weights: 100%|██████████| 338/338 [00:00<00:00, 429.50it/s]
+[36m(RayTrainWorker pid=6867)[0m HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"[32m [repeated 7x across cluster][0m
+[36m(RayTrainWorker pid=6866)[0m Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.[32m [repeated 2x across cluster][0m
+[36m(RayTrainWorker pid=6866)[0m /adapterforge/pipelines/ray_finetune.py:75: FutureWarning: The default `loss_type` will change from `'nll'` to `'chunked_nll'` in TRL 1.7. For standard models this is transparent (same math, lower memory) and no action is needed — you'll get the new default automatically on upgrade. If you use a custom model, check ahead of time that `loss_type='chunked_nll'` runs and yields the same loss as `'nll'`; if it doesn't, pin `loss_type='nll'` to keep the current behavior and please open an issue at https://github.com/huggingface/trl/issues so we can address the edge case.
+[36m(RayTrainWorker pid=6866)[0m   sft_config = SFTConfig(
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(RayTrainWorker pid=6867)[0m HTTP Request: GET https://huggingface.co/api/models/Qwen/Qwen2.5-1.5B-Instruct/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+[36m(RayTrainWorker pid=6867)[0m HTTP Request: GET https://huggingface.co/api/models/Qwen/Qwen2.5-1.5B-Instruct "HTTP/1.1 200 OK"[32m [repeated 3x across cluster][0m
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(RayTrainWorker pid=6866)[0m                0 COPY_FREE_VARS           1
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1484           2 RESUME                   0
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1485           4 LOAD_FAST                0 (example)
+[36m(RayTrainWorker pid=6866)[0m                6 LOAD_ATTR                1 (NULL|self + get)
+[36m(RayTrainWorker pid=6866)[0m               26 LOAD_CONST               1 ('tools')
+[36m(RayTrainWorker pid=6866)[0m               28 CALL                     1
+[36m(RayTrainWorker pid=6866)[0m               36 STORE_FAST               4 (tools)
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1486          38 LOAD_GLOBAL              3 (NULL + isinstance)
+[36m(RayTrainWorker pid=6866)[0m               48 LOAD_FAST                4 (tools)
+[36m(RayTrainWorker pid=6866)[0m               50 LOAD_GLOBAL              4 (str)
+[36m(RayTrainWorker pid=6866)[0m               60 CALL                     2
+[36m(RayTrainWorker pid=6866)[0m               68 POP_JUMP_IF_FALSE       21 (to 112)
+[36m(RayTrainWorker pid=6866)[0m               70 LOAD_GLOBAL              7 (NULL + json)
+[36m(RayTrainWorker pid=6866)[0m               80 LOAD_ATTR                8 (loads)
+[36m(RayTrainWorker pid=6866)[0m              100 LOAD_FAST                4 (tools)
+[36m(RayTrainWorker pid=6866)[0m              102 CALL                     1
+[36m(RayTrainWorker pid=6866)[0m              110 JUMP_FORWARD             1 (to 114)
+[36m(RayTrainWorker pid=6866)[0m          >>  112 LOAD_FAST                4 (tools)
+[36m(RayTrainWorker pid=6866)[0m          >>  114 STORE_FAST               4 (tools)
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1487         116 LOAD_CONST               2 ('prompt')
+[36m(RayTrainWorker pid=6866)[0m              118 LOAD_FAST                0 (example)
+[36m(RayTrainWorker pid=6866)[0m              120 CONTAINS_OP              0
+[36m(RayTrainWorker pid=6866)[0m              122 EXTENDED_ARG             1
+[36m(RayTrainWorker pid=6866)[0m              124 POP_JUMP_IF_FALSE      270 (to 666)
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1488         126 BUILD_MAP                0
+[36m(RayTrainWorker pid=6866)[0m              128 STORE_FAST               5 (output)
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1489         130 LOAD_GLOBAL             11 (NULL + is_conversational)
+[36m(RayTrainWorker pid=6866)[0m              140 LOAD_FAST                0 (example)
+[36m(RayTrainWorker pid=6866)[0m              142 CALL                     1
+[36m(RayTrainWorker pid=6866)[0m              150 POP_JUMP_IF_FALSE      111 (to 374)
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1490         152 PUSH_NULL
+[36m(RayTrainWorker pid=6866)[0m              154 LOAD_DEREF              12 (self)
+[36m(RayTrainWorker pid=6866)[0m              156 LOAD_ATTR               12 (_tokenize)
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1491         176 LOAD_FAST                1 (processing_class)
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1492         178 LOAD_FAST                0 (example)
+[36m(RayTrainWorker pid=6866)[0m              180 LOAD_CONST               2 ('prompt')
+[36m(RayTrainWorker pid=6866)[0m              182 BINARY_SUBSCR
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1490         186 BUILD_TUPLE              2
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1493         188 LOAD_FAST                4 (tools)
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1494         190 LOAD_CONST               3 (True)
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1490         192 LOAD_CONST               4 (('tools', 'add_generation_prompt'))
+[36m(RayTrainWorker pid=6866)[0m              194 BUILD_CONST_KEY_MAP      2
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1495         196 LOAD_FAST                0 (example)
+[36m(RayTrainWorker pid=6866)[0m              198 LOAD_ATTR                1 (NULL|self + get)
+[36m(RayTrainWorker pid=6866)[0m              218 LOAD_CONST               5 ('chat_template_kwargs')
+[36m(RayTrainWorker pid=6866)[0m              220 BUILD_MAP                0
+[36m(RayTrainWorker pid=6866)[0m              222 CALL                     2
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1490         230 DICT_MERGE               1
+[36m(RayTrainWorker pid=6866)[0m              232 CALL_FUNCTION_EX         1
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1496         234 LOAD_CONST               6 ('input_ids')
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1490         236 BINARY_SUBSCR
+[36m(RayTrainWorker pid=6866)[0m              240 STORE_FAST               6 (prompt_ids)
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1497         242 PUSH_NULL
+[36m(RayTrainWorker pid=6866)[0m              244 LOAD_DEREF              12 (self)
+[36m(RayTrainWorker pid=6866)[0m              246 LOAD_ATTR               12 (_tokenize)
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1498         266 LOAD_FAST                1 (processing_class)
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1499         268 LOAD_FAST                0 (example)
+[36m(RayTrainWorker pid=6866)[0m              270 LOAD_CONST               2 ('prompt')
+[36m(RayTrainWorker pid=6866)[0m              272 BINARY_SUBSCR
+[36m(RayTrainWorker pid=6866)[0m              276 LOAD_FAST                0 (example)
+[36m(RayTrainWorker pid=6866)[0m              278 LOAD_CONST               7 ('completion')
+[36m(RayTrainWorker pid=6866)[0m              280 BINARY_SUBSCR
+[36m(RayTrainWorker pid=6866)[0m              284 BINARY_OP                0 (+)
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1497         288 BUILD_TUPLE              2
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1500         290 LOAD_FAST                4 (tools)
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1501         292 LOAD_FAST                3 (assistant_only_loss)
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1497         294 LOAD_CONST               8 (('tools', 'return_assistant_tokens_mask'))
+[36m(RayTrainWorker pid=6866)[0m              296 BUILD_CONST_KEY_MAP      2
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1502         298 LOAD_FAST                0 (example)
+[36m(RayTrainWorker pid=6866)[0m              300 LOAD_ATTR                1 (NULL|self + get)
+[36m(RayTrainWorker pid=6866)[0m              320 LOAD_CONST               5 ('chat_template_kwargs')
+[36m(RayTrainWorker pid=6866)[0m              322 BUILD_MAP                0
+[36m(RayTrainWorker pid=6866)[0m              324 CALL                     2
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1497         332 DICT_MERGE               1
+[36m(RayTrainWorker pid=6866)[0m              334 CALL_FUNCTION_EX         1
+[36m(RayTrainWorker pid=6866)[0m              336 STORE_FAST               7 (prompt_completion_processed)
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1504         338 LOAD_FAST                7 (prompt_completion_processed)
+[36m(RayTrainWorker pid=6866)[0m              340 LOAD_CONST               6 ('input_ids')
+[36m(RayTrainWorker pid=6866)[0m              342 BINARY_SUBSCR
+[36m(RayTrainWorker pid=6866)[0m              346 STORE_FAST               8 (prompt_completion_ids)
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1505         348 LOAD_CONST               9 ('assistant_masks')
+[36m(RayTrainWorker pid=6866)[0m              350 LOAD_FAST                7 (prompt_completion_processed)
+[36m(RayTrainWorker pid=6866)[0m              352 CONTAINS_OP              0
+[36m(RayTrainWorker pid=6866)[0m              354 POP_JUMP_IF_FALSE       63 (to 482)
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1506         356 LOAD_FAST                7 (prompt_completion_processed)
+[36m(RayTrainWorker pid=6866)[0m              358 LOAD_CONST               9 ('assistant_masks')
+[36m(RayTrainWorker pid=6866)[0m              360 BINARY_SUBSCR
+[36m(RayTrainWorker pid=6866)[0m              364 LOAD_FAST                5 (output)
+[36m(RayTrainWorker pid=6866)[0m              366 LOAD_CONST               9 ('assistant_masks')
+[36m(RayTrainWorker pid=6866)[0m              368 STORE_SUBSCR
+[36m(RayTrainWorker pid=6866)[0m              372 JUMP_FORWARD            54 (to 482)
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1508     >>  374 LOAD_DEREF              12 (self)
+[36m(RayTrainWorker pid=6866)[0m              376 LOAD_ATTR               13 (NULL|self + _tokenize)
+[36m(RayTrainWorker pid=6866)[0m              396 LOAD_FAST                1 (processing_class)
+[36m(RayTrainWorker pid=6866)[0m              398 LOAD_FAST                0 (example)
+[36m(RayTrainWorker pid=6866)[0m              400 LOAD_CONST               2 ('prompt')
+[36m(RayTrainWorker pid=6866)[0m              402 BINARY_SUBSCR
+[36m(RayTrainWorker pid=6866)[0m              406 CALL                     2
+[36m(RayTrainWorker pid=6866)[0m              414 LOAD_CONST               6 ('input_ids')
+[36m(RayTrainWorker pid=6866)[0m              416 BINARY_SUBSCR
+[36m(RayTrainWorker pid=6866)[0m              420 STORE_FAST               6 (prompt_ids)
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1509         422 LOAD_DEREF              12 (self)
+[36m(RayTrainWorker pid=6866)[0m              424 LOAD_ATTR               13 (NULL|self + _tokenize)
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1510         444 LOAD_FAST                1 (processing_class)
+[36m(RayTrainWorker pid=6866)[0m              446 LOAD_FAST                0 (example)
+[36m(RayTrainWorker pid=6866)[0m              448 LOAD_CONST               2 ('prompt')
+[36m(RayTrainWorker pid=6866)[0m              450 BINARY_SUBSCR
+[36m(RayTrainWorker pid=6866)[0m              454 LOAD_FAST                0 (example)
+[36m(RayTrainWorker pid=6866)[0m              456 LOAD_CONST               7 ('completion')
+[36m(RayTrainWorker pid=6866)[0m              458 BINARY_SUBSCR
+[36m(RayTrainWorker pid=6866)[0m              462 BINARY_OP                0 (+)
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1509         466 CALL                     2
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1511         474 LOAD_CONST               6 ('input_ids')
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1509         476 BINARY_SUBSCR
+[36m(RayTrainWorker pid=6866)[0m              480 STORE_FAST               8 (prompt_completion_ids)
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1514     >>  482 LOAD_FAST                8 (prompt_completion_ids)
+[36m(RayTrainWorker pid=6866)[0m              484 LOAD_CONST               0 (None)
+[36m(RayTrainWorker pid=6866)[0m              486 LOAD_GLOBAL             15 (NULL + len)
+[36m(RayTrainWorker pid=6866)[0m              496 LOAD_FAST                6 (prompt_ids)
+[36m(RayTrainWorker pid=6866)[0m              498 CALL                     1
+[36m(RayTrainWorker pid=6866)[0m              506 BINARY_SLICE
+[36m(RayTrainWorker pid=6866)[0m              508 LOAD_FAST                6 (prompt_ids)
+[36m(RayTrainWorker pid=6866)[0m              510 COMPARE_OP              40 (==)
+[36m(RayTrainWorker pid=6866)[0m              514 POP_JUMP_IF_TRUE        21 (to 558)
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1515         516 LOAD_GLOBAL             16 (logger)
+[36m(RayTrainWorker pid=6866)[0m              526 LOAD_ATTR               19 (NULL|self + warning)
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1516         546 LOAD_CONST              10 ('Mismatch between tokenized prompt and the start of tokenized prompt+completion. This may be due to unexpected tokenizer behavior, whitespace issues, or special token handling. Verify that the tokenizer is processing text consistently.')
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1515         548 CALL                     1
+[36m(RayTrainWorker pid=6866)[0m              556 POP_TOP
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1522     >>  558 LOAD_CONST              11 (0)
+[36m(RayTrainWorker pid=6866)[0m              560 BUILD_LIST               1
+[36m(RayTrainWorker pid=6866)[0m              562 LOAD_GLOBAL             15 (NULL + len)
+[36m(RayTrainWorker pid=6866)[0m              572 LOAD_FAST                6 (prompt_ids)
+[36m(RayTrainWorker pid=6866)[0m              574 CALL                     1
+[36m(RayTrainWorker pid=6866)[0m              582 BINARY_OP                5 (*)
+[36m(RayTrainWorker pid=6866)[0m              586 LOAD_CONST              12 (1)
+[36m(RayTrainWorker pid=6866)[0m              588 BUILD_LIST               1
+[36m(RayTrainWorker pid=6866)[0m              590 LOAD_GLOBAL             15 (NULL + len)
+[36m(RayTrainWorker pid=6866)[0m              600 LOAD_FAST                8 (prompt_completion_ids)
+[36m(RayTrainWorker pid=6866)[0m              602 CALL                     1
+[36m(RayTrainWorker pid=6866)[0m              610 LOAD_GLOBAL             15 (NULL + len)
+[36m(RayTrainWorker pid=6866)[0m              620 LOAD_FAST                6 (prompt_ids)
+[36m(RayTrainWorker pid=6866)[0m              622 CALL                     1
+[36m(RayTrainWorker pid=6866)[0m              630 BINARY_OP               10 (-)
+[36m(RayTrainWorker pid=6866)[0m              634 BINARY_OP                5 (*)
+[36m(RayTrainWorker pid=6866)[0m              638 BINARY_OP                0 (+)
+[36m(RayTrainWorker pid=6866)[0m              642 STORE_FAST               9 (completion_mask)
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1523         644 LOAD_FAST                8 (prompt_completion_ids)
+[36m(RayTrainWorker pid=6866)[0m              646 LOAD_FAST                5 (output)
+[36m(RayTrainWorker pid=6866)[0m              648 LOAD_CONST               6 ('input_ids')
+[36m(RayTrainWorker pid=6866)[0m              650 STORE_SUBSCR
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1524         654 LOAD_FAST                9 (completion_mask)
+[36m(RayTrainWorker pid=6866)[0m              656 LOAD_FAST                5 (output)
+[36m(RayTrainWorker pid=6866)[0m              658 LOAD_CONST              13 ('completion_mask')
+[36m(RayTrainWorker pid=6866)[0m              660 STORE_SUBSCR
+[36m(RayTrainWorker pid=6866)[0m              664 JUMP_FORWARD           104 (to 874)
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1527     >>  666 LOAD_GLOBAL             11 (NULL + is_conversational)
+[36m(RayTrainWorker pid=6866)[0m              676 LOAD_FAST                0 (example)
+[36m(RayTrainWorker pid=6866)[0m              678 CALL                     1
+[36m(RayTrainWorker pid=6866)[0m              686 POP_JUMP_IF_FALSE       67 (to 822)
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1528         688 PUSH_NULL
+[36m(RayTrainWorker pid=6866)[0m              690 LOAD_DEREF              12 (self)
+[36m(RayTrainWorker pid=6866)[0m              692 LOAD_ATTR               12 (_tokenize)
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1529         712 LOAD_FAST                1 (processing_class)
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1530         714 LOAD_FAST                0 (example)
+[36m(RayTrainWorker pid=6866)[0m              716 LOAD_CONST              14 ('messages')
+[36m(RayTrainWorker pid=6866)[0m              718 BINARY_SUBSCR
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1528         722 BUILD_TUPLE              2
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1531         724 LOAD_FAST                4 (tools)
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1532         726 LOAD_FAST                3 (assistant_only_loss)
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1528         728 LOAD_CONST               8 (('tools', 'return_assistant_tokens_mask'))
+[36m(RayTrainWorker pid=6866)[0m              730 BUILD_CONST_KEY_MAP      2
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1533         732 LOAD_FAST                0 (example)
+[36m(RayTrainWorker pid=6866)[0m              734 LOAD_ATTR                1 (NULL|self + get)
+[36m(RayTrainWorker pid=6866)[0m              754 LOAD_CONST               5 ('chat_template_kwargs')
+[36m(RayTrainWorker pid=6866)[0m              756 BUILD_MAP                0
+[36m(RayTrainWorker pid=6866)[0m              758 CALL                     2
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1528         766 DICT_MERGE               1
+[36m(RayTrainWorker pid=6866)[0m              768 CALL_FUNCTION_EX         1
+[36m(RayTrainWorker pid=6866)[0m              770 STORE_FAST              10 (processed)
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1535         772 LOAD_CONST              15 (('input_ids', 'assistant_masks'))
+[36m(RayTrainWorker pid=6866)[0m              774 GET_ITER
+[36m(RayTrainWorker pid=6866)[0m              776 LOAD_FAST_AND_CLEAR     11 (k)
+[36m(RayTrainWorker pid=6866)[0m              778 SWAP                     2
+[36m(RayTrainWorker pid=6866)[0m              780 BUILD_MAP                0
+[36m(RayTrainWorker pid=6866)[0m              782 SWAP                     2
+[36m(RayTrainWorker pid=6866)[0m          >>  784 FOR_ITER                13 (to 814)
+[36m(RayTrainWorker pid=6866)[0m              788 STORE_FAST              11 (k)
+[36m(RayTrainWorker pid=6866)[0m              790 LOAD_FAST               11 (k)
+[36m(RayTrainWorker pid=6866)[0m              792 LOAD_FAST               10 (processed)
+[36m(RayTrainWorker pid=6866)[0m              794 CONTAINS_OP              0
+[36m(RayTrainWorker pid=6866)[0m              796 POP_JUMP_IF_TRUE         1 (to 800)
+[36m(RayTrainWorker pid=6866)[0m              798 JUMP_BACKWARD            8 (to 784)
+[36m(RayTrainWorker pid=6866)[0m          >>  800 LOAD_FAST               11 (k)
+[36m(RayTrainWorker pid=6866)[0m              802 LOAD_FAST               10 (processed)
+[36m(RayTrainWorker pid=6866)[0m              804 LOAD_FAST               11 (k)
+[36m(RayTrainWorker pid=6866)[0m              806 BINARY_SUBSCR
+[36m(RayTrainWorker pid=6866)[0m              810 MAP_ADD                  2
+[36m(RayTrainWorker pid=6866)[0m              812 JUMP_BACKWARD           15 (to 784)
+[36m(RayTrainWorker pid=6866)[0m          >>  814 END_FOR
+[36m(RayTrainWorker pid=6866)[0m              816 STORE_FAST               5 (output)
+[36m(RayTrainWorker pid=6866)[0m              818 STORE_FAST              11 (k)
+[36m(RayTrainWorker pid=6866)[0m              820 JUMP_FORWARD            26 (to 874)
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1538     >>  822 LOAD_CONST               6 ('input_ids')
+[36m(RayTrainWorker pid=6866)[0m              824 LOAD_DEREF              12 (self)
+[36m(RayTrainWorker pid=6866)[0m              826 LOAD_ATTR               13 (NULL|self + _tokenize)
+[36m(RayTrainWorker pid=6866)[0m              846 LOAD_FAST                1 (processing_class)
+[36m(RayTrainWorker pid=6866)[0m              848 LOAD_FAST                0 (example)
+[36m(RayTrainWorker pid=6866)[0m              850 LOAD_FAST                2 (dataset_text_field)
+[36m(RayTrainWorker pid=6866)[0m              852 BINARY_SUBSCR
+[36m(RayTrainWorker pid=6866)[0m              856 CALL                     2
+[36m(RayTrainWorker pid=6866)[0m              864 LOAD_CONST               6 ('input_ids')
+[36m(RayTrainWorker pid=6866)[0m              866 BINARY_SUBSCR
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1537         870 BUILD_MAP                1
+[36m(RayTrainWorker pid=6866)[0m              872 STORE_FAST               5 (output)
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1541     >>  874 LOAD_CONST               9 ('assistant_masks')
+[36m(RayTrainWorker pid=6866)[0m              876 LOAD_FAST                5 (output)
+[36m(RayTrainWorker pid=6866)[0m              878 CONTAINS_OP              0
+[36m(RayTrainWorker pid=6866)[0m              880 POP_JUMP_IF_FALSE       18 (to 918)
+[36m(RayTrainWorker pid=6866)[0m              882 LOAD_CONST              12 (1)
+[36m(RayTrainWorker pid=6866)[0m              884 LOAD_FAST                5 (output)
+[36m(RayTrainWorker pid=6866)[0m              886 LOAD_CONST               9 ('assistant_masks')
+[36m(RayTrainWorker pid=6866)[0m              888 BINARY_SUBSCR
+[36m(RayTrainWorker pid=6866)[0m              892 CONTAINS_OP              1
+[36m(RayTrainWorker pid=6866)[0m              894 POP_JUMP_IF_FALSE       11 (to 918)
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1542         896 LOAD_GLOBAL             21 (NULL + RuntimeError)
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1543         906 LOAD_CONST              16 ("You're using `assistant_only_loss=True`, but at least one example has no assistant tokens. This usually means the tokenizer's chat template doesn't generate assistant masks — it may be missing the `{% generation %}` keyword. Please check the template and ensure it's correctly configured to support assistant masking.")
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1542         908 CALL                     1
+[36m(RayTrainWorker pid=6866)[0m              916 RAISE_VARARGS            1
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1548     >>  918 LOAD_FAST                5 (output)
+[36m(RayTrainWorker pid=6866)[0m              920 RETURN_VALUE
+[36m(RayTrainWorker pid=6866)[0m          >>  922 SWAP                     2
+[36m(RayTrainWorker pid=6866)[0m              924 POP_TOP
+[36m(RayTrainWorker pid=6866)[0m 
+[36m(RayTrainWorker pid=6866)[0m 1535         926 SWAP                     2
+[36m(RayTrainWorker pid=6866)[0m              928 STORE_FAST              11 (k)
+[36m(RayTrainWorker pid=6866)[0m              930 RERAISE                  0
+[36m(RayTrainWorker pid=6866)[0m ExceptionTable:
+[36m(RayTrainWorker pid=6866)[0m   780 to 796 -> 922 [2]
+[36m(RayTrainWorker pid=6866)[0m   800 to 814 -> 922 [2]
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(RayTrainWorker pid=6866)[0m [transformers] The tokenizer has new PAD/BOS/EOS tokens that differ from the model config and generation config. The model config and generation config were aligned accordingly, being updated with the tokenizer's values. Updated tokens: {'bos_token_id': None, 'pad_token_id': 151643}.
+[36m(RayTrainWorker pid=6866)[0m HTTP Request: HEAD https://huggingface.co/api/telemetry/trl/SFTTrainer "HTTP/1.1 200 OK"
+[36m(RayTrainWorker pid=6867)[0m Loading weights:   0%|          | 0/338 [00:00<?, ?it/s]
+[36m(RayTrainWorker pid=6867)[0m Loading weights:  83%|████████▎ | 280/338 [00:00<00:00, 512.79it/s][32m [repeated 8x across cluster][0m
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(RayTrainWorker pid=6867)[0m Loading weights: 100%|██████████| 338/338 [00:00<00:00, 471.90it/s]
+[36m(RayTrainWorker pid=6867)[0m HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen2.5-1.5B-Instruct/989aa7980e4cf806f80c7fef2b1adb7bc71aa306/generation_config.json "HTTP/1.1 200 OK"[32m [repeated 2x across cluster][0m
+[36m(RayTrainWorker pid=6867)[0m HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct/resolve/main/generation_config.json "HTTP/1.1 307 Temporary Redirect"[32m [repeated 2x across cluster][0m
+[36m(RayTrainWorker pid=6867)[0m /adapterforge/pipelines/ray_finetune.py:75: FutureWarning: The default `loss_type` will change from `'nll'` to `'chunked_nll'` in TRL 1.7. For standard models this is transparent (same math, lower memory) and no action is needed — you'll get the new default automatically on upgrade. If you use a custom model, check ahead of time that `loss_type='chunked_nll'` runs and yields the same loss as `'nll'`; if it doesn't, pin `loss_type='nll'` to keep the current behavior and please open an issue at https://github.com/huggingface/trl/issues so we can address the edge case.
+[36m(RayTrainWorker pid=6867)[0m   sft_config = SFTConfig(
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(RayTrainWorker pid=6867)[0m 
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(RayTrainWorker pid=6867)[0m                0 COPY_FREE_VARS           1
+[36m(RayTrainWorker pid=6867)[0m 1484           2 RESUME                   0
+[36m(RayTrainWorker pid=6867)[0m              848 LOAD_FAST                0 (example)[32m [repeated 15x across cluster][0m
+[36m(RayTrainWorker pid=6867)[0m              734 LOAD_ATTR                1 (NULL|self + get)[32m [repeated 4x across cluster][0m
+[36m(RayTrainWorker pid=6867)[0m               26 LOAD_CONST               1 ('tools')
+[36m(RayTrainWorker pid=6867)[0m 1542         908 CALL                     1[32m [repeated 17x across cluster][0m
+[36m(RayTrainWorker pid=6867)[0m               36 STORE_FAST               4 (tools)
+[36m(RayTrainWorker pid=6867)[0m 1486          38 LOAD_GLOBAL              3 (NULL + isinstance)
+[36m(RayTrainWorker pid=6867)[0m 1531         724 LOAD_FAST                4 (tools)[32m [repeated 5x across cluster][0m
+[36m(RayTrainWorker pid=6867)[0m               50 LOAD_GLOBAL              4 (str)
+[36m(RayTrainWorker pid=6867)[0m              894 POP_JUMP_IF_FALSE       11 (to 918)[32m [repeated 7x across cluster][0m
+[36m(RayTrainWorker pid=6867)[0m               70 LOAD_GLOBAL              7 (NULL + json)
+[36m(RayTrainWorker pid=6867)[0m               80 LOAD_ATTR                8 (loads)
+[36m(RayTrainWorker pid=6867)[0m              820 JUMP_FORWARD            26 (to 874)[32m [repeated 4x across cluster][0m
+[36m(RayTrainWorker pid=6867)[0m          >>  112 LOAD_FAST                4 (tools)
+[36m(RayTrainWorker pid=6867)[0m          >>  114 STORE_FAST               4 (tools)
+[36m(RayTrainWorker pid=6867)[0m              448 LOAD_CONST               2 ('prompt')[32m [repeated 5x across cluster][0m
+[36m(RayTrainWorker pid=6867)[0m              892 CONTAINS_OP              1[32m [repeated 5x across cluster][0m
+[36m(RayTrainWorker pid=6867)[0m              122 EXTENDED_ARG             1
+[36m(RayTrainWorker pid=6867)[0m 1537         870 BUILD_MAP                1[32m [repeated 6x across cluster][0m
+[36m(RayTrainWorker pid=6867)[0m              872 STORE_FAST               5 (output)[32m [repeated 3x across cluster][0m
+[36m(RayTrainWorker pid=6867)[0m 1489         130 LOAD_GLOBAL             11 (NULL + is_conversational)
+[36m(RayTrainWorker pid=6867)[0m 1528         688 PUSH_NULL[32m [repeated 3x across cluster][0m
+[36m(RayTrainWorker pid=6867)[0m              824 LOAD_DEREF              12 (self)[32m [repeated 5x across cluster][0m
+[36m(RayTrainWorker pid=6867)[0m              692 LOAD_ATTR               12 (_tokenize)[32m [repeated 3x across cluster][0m
+[36m(RayTrainWorker pid=6867)[0m              846 LOAD_FAST                1 (processing_class)[32m [repeated 6x across cluster][0m
+[36m(RayTrainWorker pid=6867)[0m              888 BINARY_SUBSCR[32m [repeated 16x across cluster][0m
+[36m(RayTrainWorker pid=6867)[0m 1528         722 BUILD_TUPLE              2[32m [repeated 3x across cluster][0m
+[36m(RayTrainWorker pid=6867)[0m 1494         190 LOAD_CONST               3 (True)
+[36m(RayTrainWorker pid=6867)[0m 1490         192 LOAD_CONST               4 (('tools', 'add_generation_prompt'))
+[36m(RayTrainWorker pid=6867)[0m              730 BUILD_CONST_KEY_MAP      2[32m [repeated 3x across cluster][0m
+[36m(RayTrainWorker pid=6867)[0m              754 LOAD_CONST               5 ('chat_template_kwargs')[32m [repeated 3x across cluster][0m
+[36m(RayTrainWorker pid=6867)[0m 1528         766 DICT_MERGE               1[32m [repeated 3x across cluster][0m
+[36m(RayTrainWorker pid=6867)[0m              768 CALL_FUNCTION_EX         1[32m [repeated 3x across cluster][0m
+[36m(RayTrainWorker pid=6867)[0m              864 LOAD_CONST               6 ('input_ids')[32m [repeated 6x across cluster][0m
+[36m(RayTrainWorker pid=6867)[0m              420 STORE_FAST               6 (prompt_ids)[32m [repeated 2x across cluster][0m
+[36m(RayTrainWorker pid=6867)[0m              456 LOAD_CONST               7 ('completion')[32m [repeated 2x across cluster][0m
+[36m(RayTrainWorker pid=6867)[0m              638 BINARY_OP                0 (+)[32m [repeated 3x across cluster][0m
+[36m(RayTrainWorker pid=6867)[0m 1532         726 LOAD_FAST                3 (assistant_only_loss)[32m [repeated 2x across cluster][0m
+[36m(RayTrainWorker pid=6867)[0m 1528         728 LOAD_CONST               8 (('tools', 'return_assistant_tokens_mask'))[32m [repeated 2x across cluster][0m
+[36m(RayTrainWorker pid=6867)[0m              336 STORE_FAST               7 (prompt_completion_processed)
+[36m(RayTrainWorker pid=6867)[0m 1506         356 LOAD_FAST                7 (prompt_completion_processed)[32m [repeated 3x across cluster][0m
+[36m(RayTrainWorker pid=6867)[0m              480 STORE_FAST               8 (prompt_completion_ids)[32m [repeated 2x across cluster][0m
+[36m(RayTrainWorker pid=6867)[0m              886 LOAD_CONST               9 ('assistant_masks')[32m [repeated 4x across cluster][0m
+[36m(RayTrainWorker pid=6867)[0m              884 LOAD_FAST                5 (output)[32m [repeated 5x across cluster][0m
+[36m(RayTrainWorker pid=6867)[0m              660 STORE_SUBSCR[32m [repeated 3x across cluster][0m
+[36m(RayTrainWorker pid=6867)[0m 1508     >>  374 LOAD_DEREF              12 (self)
+[36m(RayTrainWorker pid=6867)[0m              826 LOAD_ATTR               13 (NULL|self + _tokenize)[32m [repeated 3x across cluster][0m
+[36m(RayTrainWorker pid=6867)[0m 1514     >>  482 LOAD_FAST                8 (prompt_completion_ids)
+[36m(RayTrainWorker pid=6867)[0m              484 LOAD_CONST               0 (None)
+[36m(RayTrainWorker pid=6867)[0m              610 LOAD_GLOBAL             15 (NULL + len)[32m [repeated 4x across cluster][0m
+[36m(RayTrainWorker pid=6867)[0m              620 LOAD_FAST                6 (prompt_ids)[32m [repeated 4x across cluster][0m
+[36m(RayTrainWorker pid=6867)[0m              506 BINARY_SLICE
+[36m(RayTrainWorker pid=6867)[0m              510 COMPARE_OP              40 (==)
+[36m(RayTrainWorker pid=6867)[0m              796 POP_JUMP_IF_TRUE         1 (to 800)[32m [repeated 2x across cluster][0m
+[36m(RayTrainWorker pid=6867)[0m 1515         516 LOAD_GLOBAL             16 (logger)
+[36m(RayTrainWorker pid=6867)[0m              526 LOAD_ATTR               19 (NULL|self + warning)
+[36m(RayTrainWorker pid=6867)[0m 1516         546 LOAD_CONST              10 ('Mismatch between tokenized prompt and the start of tokenized prompt+completion. This may be due to unexpected tokenizer behavior, whitespace issues, or special token handling. Verify that the tokenizer is processing text consistently.')
+[36m(RayTrainWorker pid=6867)[0m              924 POP_TOP[32m [repeated 2x across cluster][0m
+[36m(RayTrainWorker pid=6867)[0m 1522     >>  558 LOAD_CONST              11 (0)
+[36m(RayTrainWorker pid=6867)[0m              588 BUILD_LIST               1[32m [repeated 2x across cluster][0m
+[36m(RayTrainWorker pid=6867)[0m              634 BINARY_OP                5 (*)[32m [repeated 2x across cluster][0m
+[36m(RayTrainWorker pid=6867)[0m              882 LOAD_CONST              12 (1)[32m [repeated 2x across cluster][0m
+[36m(RayTrainWorker pid=6867)[0m 1523         644 LOAD_FAST                8 (prompt_completion_ids)[32m [repeated 2x across cluster][0m
+[36m(RayTrainWorker pid=6867)[0m              630 BINARY_OP               10 (-)
+[36m(RayTrainWorker pid=6867)[0m              642 STORE_FAST               9 (completion_mask)
+[36m(RayTrainWorker pid=6867)[0m 1524         654 LOAD_FAST                9 (completion_mask)
+[36m(RayTrainWorker pid=6867)[0m              658 LOAD_CONST              13 ('completion_mask')
+[36m(RayTrainWorker pid=6867)[0m 1527     >>  666 LOAD_GLOBAL             11 (NULL + is_conversational)
+[36m(RayTrainWorker pid=6867)[0m              716 LOAD_CONST              14 ('messages')
+[36m(RayTrainWorker pid=6867)[0m              770 STORE_FAST              10 (processed)
+[36m(RayTrainWorker pid=6867)[0m 1535         772 LOAD_CONST              15 (('input_ids', 'assistant_masks'))
+[36m(RayTrainWorker pid=6867)[0m              774 GET_ITER
+[36m(RayTrainWorker pid=6867)[0m              776 LOAD_FAST_AND_CLEAR     11 (k)
+[36m(RayTrainWorker pid=6867)[0m 1535         926 SWAP                     2[32m [repeated 3x across cluster][0m
+[36m(RayTrainWorker pid=6867)[0m          >>  784 FOR_ITER                13 (to 814)
+[36m(RayTrainWorker pid=6867)[0m              928 STORE_FAST              11 (k)[32m [repeated 3x across cluster][0m
+[36m(RayTrainWorker pid=6867)[0m              804 LOAD_FAST               11 (k)[32m [repeated 2x across cluster][0m
+[36m(RayTrainWorker pid=6867)[0m              802 LOAD_FAST               10 (processed)[32m [repeated 2x across cluster][0m
+[36m(RayTrainWorker pid=6867)[0m              812 JUMP_BACKWARD           15 (to 784)[32m [repeated 2x across cluster][0m
+[36m(RayTrainWorker pid=6867)[0m          >>  800 LOAD_FAST               11 (k)
+[36m(RayTrainWorker pid=6867)[0m              810 MAP_ADD                  2
+[36m(RayTrainWorker pid=6867)[0m          >>  814 END_FOR
+[36m(RayTrainWorker pid=6867)[0m 1538     >>  822 LOAD_CONST               6 ('input_ids')
+[36m(RayTrainWorker pid=6867)[0m              850 LOAD_FAST                2 (dataset_text_field)
+[36m(RayTrainWorker pid=6867)[0m 1541     >>  874 LOAD_CONST               9 ('assistant_masks')
+[36m(RayTrainWorker pid=6867)[0m 1542         896 LOAD_GLOBAL             21 (NULL + RuntimeError)
+[36m(RayTrainWorker pid=6867)[0m 1543         906 LOAD_CONST              16 ("You're using `assistant_only_loss=True`, but at least one example has no assistant tokens. This usually means the tokenizer's chat template doesn't generate assistant masks — it may be missing the `{% generation %}` keyword. Please check the template and ensure it's correctly configured to support assistant masking.")
+[36m(RayTrainWorker pid=6867)[0m              916 RAISE_VARARGS            1
+[36m(RayTrainWorker pid=6867)[0m 1548     >>  918 LOAD_FAST                5 (output)
+[36m(RayTrainWorker pid=6867)[0m              920 RETURN_VALUE
+[36m(RayTrainWorker pid=6867)[0m          >>  922 SWAP                     2
+[36m(RayTrainWorker pid=6867)[0m              930 RERAISE                  0
+[36m(RayTrainWorker pid=6867)[0m ExceptionTable:
+[36m(RayTrainWorker pid=6867)[0m   800 to 814 -> 922 [2][32m [repeated 2x across cluster][0m
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(RayTrainWorker pid=6867)[0m [transformers] The tokenizer has new PAD/BOS/EOS tokens that differ from the model config and generation config. The model config and generation config were aligned accordingly, being updated with the tokenizer's values. Updated tokens: {'bos_token_id': None, 'pad_token_id': 151643}.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(RayTrainWorker pid=6866)[0m   0%|          | 0/60 [00:00<?, ?it/s]
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(RayTrainWorker pid=6866)[0m [rank0]:[W621 20:57:37.467833212 reducer.cpp:1457] Warning: find_unused_parameters=True was specified in DDP constructor, but did not find any unused parameters in the forward pass. This flag results in an extra traversal of the autograd graph every iteration,  which can adversely affect performance. If your model indeed never has any unused parameters in the forward pass, consider turning this flag off. Note that this warning may be a false positive if your model has flow control causing later iterations to have unused parameters. (function operator())
+[36m(RayTrainWorker pid=6866)[0m {'loss': '64.83', 'grad_norm': '134', 'learning_rate': '0.0002', 'entropy': '1.233', 'mean_token_accuracy': '0.2294', 'num_tokens': '1350', 'epoch': '0.007353'}
+[36m(RayTrainWorker pid=6866)[0m   2%|▏         | 1/60 [00:00<00:57,  1.03it/s]                                                2%|▏         | 1/60 [00:00<00:57,  1.03it/s]
+[36m(RayTrainWorker pid=6866)[0m {'loss': '52.06', 'grad_norm': '208', 'learning_rate': '0.0001967', 'entropy': '1.315', 'mean_token_accuracy': '0.2571', 'num_tokens': '2603', 'epoch': '0.01471'}
+[36m(RayTrainWorker pid=6866)[0m   3%|▎         | 2/60 [00:01<00:40,  1.43it/s]                                                3%|▎         | 2/60 [00:01<00:40,  1.43it/s]
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(RayTrainWorker pid=6866)[0m {'loss': '38.55', 'grad_norm': '132', 'learning_rate': '0.0001933', 'entropy': '1.026', 'mean_token_accuracy': '0.3089', 'num_tokens': '3804', 'epoch': '0.02206'}
+[36m(RayTrainWorker pid=6866)[0m   5%|▌         | 3/60 [00:01<00:33,  1.68it/s]                                                5%|▌         | 3/60 [00:01<00:33,  1.68it/s]
+[36m(RayTrainWorker pid=6866)[0m {'loss': '31.21', 'grad_norm': '149', 'learning_rate': '0.00019', 'entropy': '1.029', 'mean_token_accuracy': '0.3868', 'num_tokens': '5074', 'epoch': '0.02941'}
+[36m(RayTrainWorker pid=6866)[0m   7%|▋         | 4/60 [00:02<00:31,  1.75it/s]                                                7%|▋         | 4/60 [00:02<00:31,  1.75it/s]
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(RayTrainWorker pid=6866)[0m {'loss': '28.94', 'grad_norm': '149', 'learning_rate': '0.0001867', 'entropy': '1.001', 'mean_token_accuracy': '0.3836', 'num_tokens': '6318', 'epoch': '0.03676'}
+[36m(RayTrainWorker pid=6866)[0m   8%|▊         | 5/60 [00:02<00:29,  1.86it/s]                                                8%|▊         | 5/60 [00:02<00:29,  1.86it/s]
+[36m(RayTrainWorker pid=6866)[0m {'loss': '21.51', 'grad_norm': '111.5', 'learning_rate': '0.0001833', 'entropy': '1.151', 'mean_token_accuracy': '0.4026', 'num_tokens': '7576', 'epoch': '0.04412'}
+[36m(RayTrainWorker pid=6866)[0m  10%|█         | 6/60 [00:03<00:28,  1.92it/s]                                               10%|█         | 6/60 [00:03<00:28,  1.92it/s]
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(RayTrainWorker pid=6866)[0m {'loss': '17.73', 'grad_norm': '91.5', 'learning_rate': '0.00018', 'entropy': '1.124', 'mean_token_accuracy': '0.3904', 'num_tokens': '8755', 'epoch': '0.05147'}
+[36m(RayTrainWorker pid=6866)[0m  12%|█▏        | 7/60 [00:03<00:26,  1.99it/s]                                               12%|█▏        | 7/60 [00:03<00:26,  1.99it/s]
+[36m(RayTrainWorker pid=6866)[0m {'loss': '13.54', 'grad_norm': '71', 'learning_rate': '0.0001767', 'entropy': '1.061', 'mean_token_accuracy': '0.3746', 'num_tokens': '1.004e+04', 'epoch': '0.05882'}
+[36m(RayTrainWorker pid=6866)[0m  13%|█▎        | 8/60 [00:04<00:26,  1.95it/s]                                               13%|█▎        | 8/60 [00:04<00:26,  1.95it/s]
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(RayTrainWorker pid=6866)[0m {'loss': '10.28', 'grad_norm': '40', 'learning_rate': '0.0001733', 'entropy': '1.041', 'mean_token_accuracy': '0.3789', 'num_tokens': '1.138e+04', 'epoch': '0.06618'}
+[36m(RayTrainWorker pid=6866)[0m  15%|█▌        | 9/60 [00:04<00:25,  2.03it/s]                                               15%|█▌        | 9/60 [00:04<00:25,  2.03it/s]
+[36m(RayTrainWorker pid=6866)[0m {'loss': '8.711', 'grad_norm': '20.75', 'learning_rate': '0.00017', 'entropy': '1.248', 'mean_token_accuracy': '0.3751', 'num_tokens': '1.26e+04', 'epoch': '0.07353'}
+[36m(RayTrainWorker pid=6866)[0m  17%|█▋        | 10/60 [00:05<00:24,  2.05it/s]                                                17%|█▋        | 10/60 [00:05<00:24,  2.05it/s]
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(RayTrainWorker pid=6867)[0m [rank1]:[W621 20:57:37.483598493 reducer.cpp:1457] Warning: find_unused_parameters=True was specified in DDP constructor, but did not find any unused parameters in the forward pass. This flag results in an extra traversal of the autograd graph every iteration,  which can adversely affect performance. If your model indeed never has any unused parameters in the forward pass, consider turning this flag off. Note that this warning may be a false positive if your model has flow control causing later iterations to have unused parameters. (function operator())
+[36m(RayTrainWorker pid=6866)[0m {'loss': '8.265', 'grad_norm': '32.75', 'learning_rate': '0.0001667', 'entropy': '1.503', 'mean_token_accuracy': '0.3755', 'num_tokens': '1.375e+04', 'epoch': '0.08088'}
+[36m(RayTrainWorker pid=6866)[0m  18%|█▊        | 11/60 [00:05<00:23,  2.10it/s]                                                18%|█▊        | 11/60 [00:05<00:23,  2.10it/s]
+[36m(RayTrainWorker pid=6866)[0m {'loss': '7.563', 'grad_norm': '38', 'learning_rate': '0.0001633', 'entropy': '1.858', 'mean_token_accuracy': '0.3917', 'num_tokens': '1.49e+04', 'epoch': '0.08824'}
+[36m(RayTrainWorker pid=6866)[0m  20%|██        | 12/60 [00:06<00:22,  2.15it/s]                                                20%|██        | 12/60 [00:06<00:22,  2.15it/s]
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(RayTrainWorker pid=6866)[0m {'loss': '7.273', 'grad_norm': '30.88', 'learning_rate': '0.00016', 'entropy': '2.644', 'mean_token_accuracy': '0.3797', 'num_tokens': '1.609e+04', 'epoch': '0.09559'}
+[36m(RayTrainWorker pid=6866)[0m  22%|██▏       | 13/60 [00:06<00:21,  2.19it/s]                                                22%|██▏       | 13/60 [00:06<00:21,  2.19it/s]
+[36m(RayTrainWorker pid=6866)[0m {'loss': '6.466', 'grad_norm': '24', 'learning_rate': '0.0001567', 'entropy': '2.772', 'mean_token_accuracy': '0.4107', 'num_tokens': '1.734e+04', 'epoch': '0.1029'}
+[36m(RayTrainWorker pid=6866)[0m  23%|██▎       | 14/60 [00:07<00:21,  2.15it/s]                                                23%|██▎       | 14/60 [00:07<00:21,  2.15it/s]
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(RayTrainWorker pid=6866)[0m {'loss': '5.989', 'grad_norm': '16', 'learning_rate': '0.0001533', 'entropy': '2.605', 'mean_token_accuracy': '0.3981', 'num_tokens': '1.86e+04', 'epoch': '0.1103'}
+[36m(RayTrainWorker pid=6866)[0m  25%|██▌       | 15/60 [00:07<00:21,  2.13it/s]                                                25%|██▌       | 15/60 [00:07<00:21,  2.13it/s]
+[36m(RayTrainWorker pid=6866)[0m {'loss': '5.472', 'grad_norm': '13.94', 'learning_rate': '0.00015', 'entropy': '2.454', 'mean_token_accuracy': '0.4024', 'num_tokens': '1.977e+04', 'epoch': '0.1176'}
+[36m(RayTrainWorker pid=6866)[0m  27%|██▋       | 16/60 [00:08<00:20,  2.17it/s]                                                27%|██▋       | 16/60 [00:08<00:20,  2.17it/s]
+[36m(RayTrainWorker pid=6866)[0m {'loss': '5.52', 'grad_norm': '18', 'learning_rate': '0.0001467', 'entropy': '2.51', 'mean_token_accuracy': '0.3725', 'num_tokens': '2.106e+04', 'epoch': '0.125'}
+[36m(RayTrainWorker pid=6866)[0m  28%|██▊       | 17/60 [00:08<00:19,  2.17it/s]                                                28%|██▊       | 17/60 [00:08<00:19,  2.17it/s]
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(RayTrainWorker pid=6866)[0m {'loss': '5.073', 'grad_norm': '20.75', 'learning_rate': '0.0001433', 'entropy': '2.518', 'mean_token_accuracy': '0.3817', 'num_tokens': '2.235e+04', 'epoch': '0.1324'}
+[36m(RayTrainWorker pid=6866)[0m  30%|███       | 18/60 [00:09<00:19,  2.17it/s]                                                30%|███       | 18/60 [00:09<00:19,  2.17it/s]
+[36m(RayTrainWorker pid=6866)[0m {'loss': '4.919', 'grad_norm': '20.75', 'learning_rate': '0.00014', 'entropy': '2.467', 'mean_token_accuracy': '0.415', 'num_tokens': '2.368e+04', 'epoch': '0.1397'}
+[36m(RayTrainWorker pid=6866)[0m  32%|███▏      | 19/60 [00:09<00:18,  2.18it/s]                                                32%|███▏      | 19/60 [00:09<00:18,  2.18it/s]
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(RayTrainWorker pid=6866)[0m {'loss': '5.074', 'grad_norm': '15.12', 'learning_rate': '0.0001367', 'entropy': '2.949', 'mean_token_accuracy': '0.3906', 'num_tokens': '2.485e+04', 'epoch': '0.1471'}
+[36m(RayTrainWorker pid=6866)[0m  33%|███▎      | 20/60 [00:09<00:18,  2.22it/s]                                                33%|███▎      | 20/60 [00:09<00:18,  2.22it/s]
+[36m(RayTrainWorker pid=6866)[0m {'loss': '5.232', 'grad_norm': '11.94', 'learning_rate': '0.0001333', 'entropy': '3.723', 'mean_token_accuracy': '0.3527', 'num_tokens': '2.611e+04', 'epoch': '0.1544'}
+[36m(RayTrainWorker pid=6866)[0m  35%|███▌      | 21/60 [00:10<00:17,  2.21it/s]                                                35%|███▌      | 21/60 [00:10<00:17,  2.21it/s]
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(RayTrainWorker pid=6866)[0m {'loss': '4.911', 'grad_norm': '14.56', 'learning_rate': '0.00013', 'entropy': '3.791', 'mean_token_accuracy': '0.396', 'num_tokens': '2.737e+04', 'epoch': '0.1618'}
+[36m(RayTrainWorker pid=6866)[0m  37%|███▋      | 22/60 [00:10<00:17,  2.22it/s]                                                37%|███▋      | 22/60 [00:10<00:17,  2.22it/s]
+[36m(RayTrainWorker pid=6866)[0m {'loss': '5.186', 'grad_norm': '15.56', 'learning_rate': '0.0001267', 'entropy': '4.004', 'mean_token_accuracy': '0.3551', 'num_tokens': '2.86e+04', 'epoch': '0.1691'}
+[36m(RayTrainWorker pid=6866)[0m  38%|███▊      | 23/60 [00:11<00:17,  2.17it/s]                                                38%|███▊      | 23/60 [00:11<00:17,  2.17it/s]
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(RayTrainWorker pid=6866)[0m {'loss': '4.715', 'grad_norm': '5.438', 'learning_rate': '0.0001233', 'entropy': '3.485', 'mean_token_accuracy': '0.3993', 'num_tokens': '2.983e+04', 'epoch': '0.1765'}
+[36m(RayTrainWorker pid=6866)[0m  40%|████      | 24/60 [00:11<00:16,  2.20it/s]                                                40%|████      | 24/60 [00:11<00:16,  2.20it/s]
+[36m(RayTrainWorker pid=6866)[0m {'loss': '4.04', 'grad_norm': '10.12', 'learning_rate': '0.00012', 'entropy': '2.845', 'mean_token_accuracy': '0.4242', 'num_tokens': '3.101e+04', 'epoch': '0.1838'}
+[36m(RayTrainWorker pid=6866)[0m  42%|████▏     | 25/60 [00:12<00:15,  2.22it/s]                                                42%|████▏     | 25/60 [00:12<00:15,  2.22it/s]
+[36m(RayTrainWorker pid=6866)[0m {'loss': '4.493', 'grad_norm': '15', 'learning_rate': '0.0001167', 'entropy': '2.874', 'mean_token_accuracy': '0.4201', 'num_tokens': '3.22e+04', 'epoch': '0.1912'}
+[36m(RayTrainWorker pid=6866)[0m  43%|████▎     | 26/60 [00:12<00:15,  2.23it/s]                                                43%|████▎     | 26/60 [00:12<00:15,  2.23it/s]
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(RayTrainWorker pid=6866)[0m {'loss': '4.064', 'grad_norm': '9.625', 'learning_rate': '0.0001133', 'entropy': '2.942', 'mean_token_accuracy': '0.4146', 'num_tokens': '3.342e+04', 'epoch': '0.1985'}
+[36m(RayTrainWorker pid=6866)[0m  45%|████▌     | 27/60 [00:13<00:14,  2.23it/s]                                                45%|████▌     | 27/60 [00:13<00:14,  2.23it/s]
+[36m(RayTrainWorker pid=6866)[0m {'loss': '4.387', 'grad_norm': '4.469', 'learning_rate': '0.00011', 'entropy': '3.318', 'mean_token_accuracy': '0.3965', 'num_tokens': '3.468e+04', 'epoch': '0.2059'}
+[36m(RayTrainWorker pid=6866)[0m  47%|████▋     | 28/60 [00:13<00:14,  2.18it/s]                                                47%|████▋     | 28/60 [00:13<00:14,  2.18it/s]
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(RayTrainWorker pid=6866)[0m {'loss': '4.562', 'grad_norm': '9.875', 'learning_rate': '0.0001067', 'entropy': '3.533', 'mean_token_accuracy': '0.369', 'num_tokens': '3.594e+04', 'epoch': '0.2132'}
+[36m(RayTrainWorker pid=6866)[0m  48%|████▊     | 29/60 [00:14<00:14,  2.18it/s]                                                48%|████▊     | 29/60 [00:14<00:14,  2.18it/s]
+[36m(RayTrainWorker pid=6866)[0m {'loss': '4.22', 'grad_norm': '8.062', 'learning_rate': '0.0001033', 'entropy': '3.443', 'mean_token_accuracy': '0.3852', 'num_tokens': '3.722e+04', 'epoch': '0.2206'}
+[36m(RayTrainWorker pid=6866)[0m  50%|█████     | 30/60 [00:14<00:14,  2.13it/s]                                                50%|█████     | 30/60 [00:14<00:14,  2.13it/s]
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(RayTrainWorker pid=6866)[0m {'loss': '4.369', 'grad_norm': '3.734', 'learning_rate': '0.0001', 'entropy': '3.483', 'mean_token_accuracy': '0.3596', 'num_tokens': '3.853e+04', 'epoch': '0.2279'}
+[36m(RayTrainWorker pid=6866)[0m  52%|█████▏    | 31/60 [00:14<00:13,  2.12it/s]                                                52%|█████▏    | 31/60 [00:14<00:13,  2.12it/s]
+[36m(RayTrainWorker pid=6866)[0m {'loss': '4.185', 'grad_norm': '8.438', 'learning_rate': '9.667e-05', 'entropy': '3.015', 'mean_token_accuracy': '0.4183', 'num_tokens': '3.98e+04', 'epoch': '0.2353'}
+[36m(RayTrainWorker pid=6866)[0m  53%|█████▎    | 32/60 [00:15<00:13,  2.09it/s]                                                53%|█████▎    | 32/60 [00:15<00:13,  2.09it/s]
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(RayTrainWorker pid=6866)[0m {'loss': '4.668', 'grad_norm': '9.375', 'learning_rate': '9.333e-05', 'entropy': '3.238', 'mean_token_accuracy': '0.3702', 'num_tokens': '4.109e+04', 'epoch': '0.2426'}
+[36m(RayTrainWorker pid=6866)[0m  55%|█████▌    | 33/60 [00:15<00:12,  2.08it/s]                                                55%|█████▌    | 33/60 [00:15<00:12,  2.08it/s]
+[36m(RayTrainWorker pid=6866)[0m {'loss': '4.456', 'grad_norm': '5.781', 'learning_rate': '9e-05', 'entropy': '3.323', 'mean_token_accuracy': '0.3762', 'num_tokens': '4.231e+04', 'epoch': '0.25'}
+[36m(RayTrainWorker pid=6866)[0m  57%|█████▋    | 34/60 [00:16<00:12,  2.07it/s]                                                57%|█████▋    | 34/60 [00:16<00:12,  2.07it/s]
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(RayTrainWorker pid=6866)[0m {'loss': '4.426', 'grad_norm': '3.734', 'learning_rate': '8.667e-05', 'entropy': '3.533', 'mean_token_accuracy': '0.3763', 'num_tokens': '4.353e+04', 'epoch': '0.2574'}
+[36m(RayTrainWorker pid=6866)[0m  58%|█████▊    | 35/60 [00:17<00:14,  1.69it/s]                                                58%|█████▊    | 35/60 [00:17<00:14,  1.69it/s]
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(RayTrainWorker pid=6866)[0m {'loss': '4.239', 'grad_norm': '8.188', 'learning_rate': '8.333e-05', 'entropy': '3.665', 'mean_token_accuracy': '0.3741', 'num_tokens': '4.478e+04', 'epoch': '0.2647'}
+[36m(RayTrainWorker pid=6866)[0m  60%|██████    | 36/60 [00:17<00:13,  1.79it/s]                                                60%|██████    | 36/60 [00:17<00:13,  1.79it/s]
+[36m(RayTrainWorker pid=6866)[0m {'loss': '4.217', 'grad_norm': '5.531', 'learning_rate': '8e-05', 'entropy': '3.607', 'mean_token_accuracy': '0.381', 'num_tokens': '4.6e+04', 'epoch': '0.2721'}
+[36m(RayTrainWorker pid=6866)[0m  62%|██████▏   | 37/60 [00:18<00:12,  1.88it/s]                                                62%|██████▏   | 37/60 [00:18<00:12,  1.88it/s]
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(RayTrainWorker pid=6866)[0m {'loss': '4.34', 'grad_norm': '2.344', 'learning_rate': '7.667e-05', 'entropy': '3.559', 'mean_token_accuracy': '0.3873', 'num_tokens': '4.72e+04', 'epoch': '0.2794'}
+[36m(RayTrainWorker pid=6866)[0m  63%|██████▎   | 38/60 [00:18<00:11,  1.94it/s]                                                63%|██████▎   | 38/60 [00:18<00:11,  1.94it/s]
+[36m(RayTrainWorker pid=6866)[0m {'loss': '4.354', 'grad_norm': '5.656', 'learning_rate': '7.333e-05', 'entropy': '3.306', 'mean_token_accuracy': '0.3965', 'num_tokens': '4.848e+04', 'epoch': '0.2868'}
+[36m(RayTrainWorker pid=6866)[0m  65%|██████▌   | 39/60 [00:19<00:10,  1.99it/s]                                                65%|██████▌   | 39/60 [00:19<00:10,  1.99it/s]
+[36m(RayTrainWorker pid=6866)[0m {'loss': '3.888', 'grad_norm': '6.094', 'learning_rate': '7e-05', 'entropy': '3.136', 'mean_token_accuracy': '0.4353', 'num_tokens': '4.962e+04', 'epoch': '0.2941'}
+[36m(RayTrainWorker pid=6866)[0m  67%|██████▋   | 40/60 [00:19<00:09,  2.07it/s]                                                67%|██████▋   | 40/60 [00:19<00:09,  2.07it/s]
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(RayTrainWorker pid=6866)[0m  68%|██████▊   | 41/60 [00:20<00:09,  2.11it/s]
+[36m(RayTrainWorker pid=6866)[0m {'loss': '4.291', 'grad_norm': '2.766', 'learning_rate': '6.667e-05', 'entropy': '3.353', 'mean_token_accuracy': '0.4042', 'num_tokens': '5.098e+04', 'epoch': '0.3015'}
+[36m(RayTrainWorker pid=6866)[0m                                                 68%|██████▊   | 41/60 [00:20<00:09,  2.11it/s]
+[36m(RayTrainWorker pid=6866)[0m {'loss': '4.018', 'grad_norm': '5.5', 'learning_rate': '6.333e-05', 'entropy': '3.503', 'mean_token_accuracy': '0.4022', 'num_tokens': '5.224e+04', 'epoch': '0.3088'}
+[36m(RayTrainWorker pid=6866)[0m  70%|███████   | 42/60 [00:20<00:08,  2.10it/s]                                                70%|███████   | 42/60 [00:20<00:08,  2.10it/s]
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(RayTrainWorker pid=6866)[0m {'loss': '3.881', 'grad_norm': '6.812', 'learning_rate': '6e-05', 'entropy': '3.608', 'mean_token_accuracy': '0.3839', 'num_tokens': '5.354e+04', 'epoch': '0.3162'}
+[36m(RayTrainWorker pid=6866)[0m  72%|███████▏  | 43/60 [00:21<00:08,  2.10it/s]                                                72%|███████▏  | 43/60 [00:21<00:08,  2.10it/s]
+[36m(RayTrainWorker pid=6866)[0m {'loss': '4.21', 'grad_norm': '3.969', 'learning_rate': '5.667e-05', 'entropy': '3.565', 'mean_token_accuracy': '0.3866', 'num_tokens': '5.484e+04', 'epoch': '0.3235'}
+[36m(RayTrainWorker pid=6866)[0m  73%|███████▎  | 44/60 [00:21<00:07,  2.13it/s]                                                73%|███████▎  | 44/60 [00:21<00:07,  2.13it/s]
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(RayTrainWorker pid=6866)[0m {'loss': '4.139', 'grad_norm': '2.016', 'learning_rate': '5.333e-05', 'entropy': '3.513', 'mean_token_accuracy': '0.378', 'num_tokens': '5.604e+04', 'epoch': '0.3309'}
+[36m(RayTrainWorker pid=6866)[0m  75%|███████▌  | 45/60 [00:21<00:06,  2.20it/s]                                                75%|███████▌  | 45/60 [00:21<00:06,  2.20it/s]
+[36m(RayTrainWorker pid=6866)[0m {'loss': '3.466', 'grad_norm': '3.891', 'learning_rate': '5e-05', 'entropy': '3.04', 'mean_token_accuracy': '0.4651', 'num_tokens': '5.737e+04', 'epoch': '0.3382'}
+[36m(RayTrainWorker pid=6866)[0m  77%|███████▋  | 46/60 [00:22<00:06,  2.19it/s]                                                77%|███████▋  | 46/60 [00:22<00:06,  2.19it/s]
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(RayTrainWorker pid=6866)[0m {'loss': '3.977', 'grad_norm': '5.719', 'learning_rate': '4.667e-05', 'entropy': '3.211', 'mean_token_accuracy': '0.4323', 'num_tokens': '5.857e+04', 'epoch': '0.3456'}
+[36m(RayTrainWorker pid=6866)[0m  78%|███████▊  | 47/60 [00:22<00:05,  2.21it/s]                                                78%|███████▊  | 47/60 [00:22<00:05,  2.21it/s]
+[36m(RayTrainWorker pid=6866)[0m {'loss': '4.12', 'grad_norm': '3.109', 'learning_rate': '4.333e-05', 'entropy': '3.432', 'mean_token_accuracy': '0.4056', 'num_tokens': '5.988e+04', 'epoch': '0.3529'}
+[36m(RayTrainWorker pid=6866)[0m  80%|████████  | 48/60 [00:23<00:05,  2.17it/s]                                                80%|████████  | 48/60 [00:23<00:05,  2.17it/s]
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(RayTrainWorker pid=6866)[0m {'loss': '4.128', 'grad_norm': '2.375', 'learning_rate': '4e-05', 'entropy': '3.563', 'mean_token_accuracy': '0.4014', 'num_tokens': '6.115e+04', 'epoch': '0.3603'}
+[36m(RayTrainWorker pid=6866)[0m  82%|████████▏ | 49/60 [00:23<00:05,  2.19it/s]                                                82%|████████▏ | 49/60 [00:23<00:05,  2.19it/s]
+[36m(RayTrainWorker pid=6866)[0m {'loss': '3.898', 'grad_norm': '2.859', 'learning_rate': '3.667e-05', 'entropy': '3.521', 'mean_token_accuracy': '0.4143', 'num_tokens': '6.239e+04', 'epoch': '0.3676'}
+[36m(RayTrainWorker pid=6866)[0m  83%|████████▎ | 50/60 [00:24<00:04,  2.18it/s]                                                83%|████████▎ | 50/60 [00:24<00:04,  2.18it/s]
+[36m(RayTrainWorker pid=6866)[0m {'loss': '3.72', 'grad_norm': '2.484', 'learning_rate': '3.333e-05', 'entropy': '3.383', 'mean_token_accuracy': '0.4367', 'num_tokens': '6.36e+04', 'epoch': '0.375'}
+[36m(RayTrainWorker pid=6866)[0m  85%|████████▌ | 51/60 [00:24<00:04,  2.21it/s]                                                85%|████████▌ | 51/60 [00:24<00:04,  2.21it/s]
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(RayTrainWorker pid=6866)[0m {'loss': '3.925', 'grad_norm': '1.938', 'learning_rate': '3e-05', 'entropy': '3.49', 'mean_token_accuracy': '0.4191', 'num_tokens': '6.483e+04', 'epoch': '0.3824'}
+[36m(RayTrainWorker pid=6866)[0m  87%|████████▋ | 52/60 [00:25<00:03,  2.24it/s]                                                87%|████████▋ | 52/60 [00:25<00:03,  2.24it/s]
+[36m(RayTrainWorker pid=6866)[0m {'loss': '3.987', 'grad_norm': '2.25', 'learning_rate': '2.667e-05', 'entropy': '3.556', 'mean_token_accuracy': '0.3976', 'num_tokens': '6.609e+04', 'epoch': '0.3897'}
+[36m(RayTrainWorker pid=6866)[0m  88%|████████▊ | 53/60 [00:25<00:03,  2.21it/s]                                                88%|████████▊ | 53/60 [00:25<00:03,  2.21it/s]
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(RayTrainWorker pid=6866)[0m {'loss': '4.264', 'grad_norm': '4.062', 'learning_rate': '2.333e-05', 'entropy': '3.448', 'mean_token_accuracy': '0.4133', 'num_tokens': '6.726e+04', 'epoch': '0.3971'}
+[36m(RayTrainWorker pid=6866)[0m  90%|█████████ | 54/60 [00:25<00:02,  2.24it/s]                                                90%|█████████ | 54/60 [00:25<00:02,  2.24it/s]
+[36m(RayTrainWorker pid=6866)[0m {'loss': '4.07', 'grad_norm': '3.078', 'learning_rate': '2e-05', 'entropy': '3.298', 'mean_token_accuracy': '0.4319', 'num_tokens': '6.86e+04', 'epoch': '0.4044'}
+[36m(RayTrainWorker pid=6866)[0m  92%|█████████▏| 55/60 [00:26<00:02,  2.23it/s]                                                92%|█████████▏| 55/60 [00:26<00:02,  2.23it/s]
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(RayTrainWorker pid=6866)[0m {'loss': '4.055', 'grad_norm': '2.484', 'learning_rate': '1.667e-05', 'entropy': '3.512', 'mean_token_accuracy': '0.3935', 'num_tokens': '6.991e+04', 'epoch': '0.4118'}
+[36m(RayTrainWorker pid=6866)[0m  93%|█████████▎| 56/60 [00:26<00:01,  2.21it/s]                                                93%|█████████▎| 56/60 [00:26<00:01,  2.21it/s]
+[36m(RayTrainWorker pid=6866)[0m {'loss': '3.713', 'grad_norm': '1.719', 'learning_rate': '1.333e-05', 'entropy': '3.408', 'mean_token_accuracy': '0.4061', 'num_tokens': '7.114e+04', 'epoch': '0.4191'}
+[36m(RayTrainWorker pid=6866)[0m  95%|█████████▌| 57/60 [00:27<00:01,  2.24it/s]                                                95%|█████████▌| 57/60 [00:27<00:01,  2.24it/s]
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(RayTrainWorker pid=6866)[0m {'loss': '4.177', 'grad_norm': '2.625', 'learning_rate': '1e-05', 'entropy': '3.459', 'mean_token_accuracy': '0.4049', 'num_tokens': '7.245e+04', 'epoch': '0.4265'}
+[36m(RayTrainWorker pid=6866)[0m  97%|█████████▋| 58/60 [00:27<00:00,  2.26it/s]                                                97%|█████████▋| 58/60 [00:27<00:00,  2.26it/s]
+[36m(RayTrainWorker pid=6866)[0m {'loss': '3.843', 'grad_norm': '2.391', 'learning_rate': '6.667e-06', 'entropy': '3.518', 'mean_token_accuracy': '0.4077', 'num_tokens': '7.362e+04', 'epoch': '0.4338'}
+[36m(RayTrainWorker pid=6866)[0m  98%|█████████▊| 59/60 [00:28<00:00,  2.27it/s]                                                98%|█████████▊| 59/60 [00:28<00:00,  2.27it/s]
+[36m(RayTrainWorker pid=6866)[0m {'loss': '4.316', 'grad_norm': '1.836', 'learning_rate': '3.333e-06', 'entropy': '3.579', 'mean_token_accuracy': '0.3828', 'num_tokens': '7.493e+04', 'epoch': '0.4412'}
+[36m(RayTrainWorker pid=6866)[0m 100%|██████████| 60/60 [00:28<00:00,  2.18it/s]                                               100%|██████████| 60/60 [00:28<00:00,  2.18it/s]
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(RayTrainWorker pid=6866)[0m HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+[36m(RayTrainWorker pid=6866)[0m HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen2.5-1.5B-Instruct/989aa7980e4cf806f80c7fef2b1adb7bc71aa306/config.json "HTTP/1.1 200 OK"
+[36m(RayTrainWorker pid=6866)[0m HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+[36m(RayTrainWorker pid=6866)[0m HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen2.5-1.5B-Instruct/989aa7980e4cf806f80c7fef2b1adb7bc71aa306/config.json "HTTP/1.1 200 OK"
+[36m(RayTrainWorker pid=6866)[0m {'train_runtime': '29.46', 'train_samples_per_second': '32.58', 'train_steps_per_second': '2.036', 'train_loss': '8.635', 'epoch': '0.4412'}
+[36m(RayTrainWorker pid=6866)[0m Checkpoint successfully created at: Checkpoint(filesystem=local, path=/root/ray_results/ray_train_run-2026-06-21_20-55-49/checkpoint_2026-06-21_20-58-06.845155)
+[36m(RayTrainWorker pid=6866)[0m Reporting training result 1: TrainingReport(checkpoint=Checkpoint(filesystem=local, path=/root/ray_results/ray_train_run-2026-06-21_20-55-49/checkpoint_2026-06-21_20-58-06.845155), metrics={'loss': 4.31595516204834, 'grad_norm': 1.8359375, 'learning_rate': 3.3333333333333333e-06, 'entropy': 3.578805446624756, 'mean_token_accuracy': 0.3828306198120117, 'num_tokens': 74927.0, 'epoch': 0.4411764705882353, 'step': 60}, validation=False)
+[36m(RayTrainWorker pid=6866)[0m                                                100%|██████████| 60/60 [00:29<00:00,  2.18it/s]100%|██████████| 60/60 [00:29<00:00,  2.04it/s]
+[36m(RayTrainWorker pid=6866)[0m Reporting training result 2: TrainingReport(checkpoint=None, metrics={'train_runtime': 29.4642, 'train_samples_per_second': 32.582, 'train_steps_per_second': 2.036, 'total_flos': 806595490480128.0, 'train_loss': 8.635121019681295, 'epoch': 0.4411764705882353}, validation=False)
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.
+[36m(RayTrainWorker pid=6867)[0m Checkpoint successfully created at: Checkpoint(filesystem=local, path=/root/ray_results/ray_train_run-2026-06-21_20-55-49/checkpoint_2026-06-21_20-58-06.845155)
+[36m(RayTrainWorker pid=6867)[0m Reporting training result 1: TrainingReport(checkpoint=Checkpoint(filesystem=local, path=/root/ray_results/ray_train_run-2026-06-21_20-55-49/checkpoint_2026-06-21_20-58-06.845155), metrics={'loss': 4.31595516204834, 'grad_norm': 1.8359375, 'learning_rate': 3.3333333333333333e-06, 'entropy': 3.578805446624756, 'mean_token_accuracy': 0.3828306198120117, 'num_tokens': 74927.0, 'epoch': 0.4411764705882353, 'step': 60}, validation=False)
+[36m(RayTrainWorker pid=6867)[0m Reporting training result 2: TrainingReport(checkpoint=None, metrics={'train_runtime': 29.454, 'train_samples_per_second': 32.593, 'train_steps_per_second': 2.037, 'total_flos': 806595490480128.0, 'train_loss': 8.635121019681295, 'epoch': 0.4411764705882353}, validation=False)
+num_workers=2 train_samples_per_second=None
+[36m(PlacementGroupCleaner pid=6865)[0m Failed to query Ray Train Controller actor state. State API may be temporarily unavailable. Continuing to monitor.

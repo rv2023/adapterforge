@@ -1,0 +1,94 @@
+Cloning into '/tmp/nccl-tests'...
+make -C src build BUILDDIR=/tmp/nccl-tests/build
+make[1]: Entering directory '/tmp/nccl-tests/src'
+Compiling  timer.cc                            > /tmp/nccl-tests/build/timer.o
+Compiling /tmp/nccl-tests/build/verifiable/verifiable.o
+Compiling  all_reduce.cu                       > /tmp/nccl-tests/build/all_reduce.o
+Compiling  common.cu                           > /tmp/nccl-tests/build/common.o
+nvcc warning : Support for offline compilation for architectures prior to '<compute/sm/lto>_75' will be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
+nvcc warning : Support for offline compilation for architectures prior to '<compute/sm/lto>_75' will be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
+Compiling  util.cu                             > /tmp/nccl-tests/build/util.o
+Compiling  all_gather.cu                       > /tmp/nccl-tests/build/all_gather.o
+nvcc warning : Support for offline compilation for architectures prior to '<compute/sm/lto>_75' will be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
+Compiling  broadcast.cu                        > /tmp/nccl-tests/build/broadcast.o
+nvcc warning : Support for offline compilation for architectures prior to '<compute/sm/lto>_75' will be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
+Compiling  reduce_scatter.cu                   > /tmp/nccl-tests/build/reduce_scatter.o
+nvcc warning : Support for offline compilation for architectures prior to '<compute/sm/lto>_75' will be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
+Compiling  reduce.cu                           > /tmp/nccl-tests/build/reduce.o
+nvcc warning : Support for offline compilation for architectures prior to '<compute/sm/lto>_75' will be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
+nvcc warning : Support for offline compilation for architectures prior to '<compute/sm/lto>_75' will be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
+Compiling  alltoall.cu                         > /tmp/nccl-tests/build/alltoall.o
+nvcc warning : Support for offline compilation for architectures prior to '<compute/sm/lto>_75' will be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
+Compiling  scatter.cu                          > /tmp/nccl-tests/build/scatter.o
+nvcc warning : Support for offline compilation for architectures prior to '<compute/sm/lto>_75' will be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
+Compiling  gather.cu                           > /tmp/nccl-tests/build/gather.o
+nvcc warning : Support for offline compilation for architectures prior to '<compute/sm/lto>_75' will be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
+Compiling  sendrecv.cu                         > /tmp/nccl-tests/build/sendrecv.o
+Compiling  hypercube.cu                        > /tmp/nccl-tests/build/hypercube.o
+nvcc warning : Support for offline compilation for architectures prior to '<compute/sm/lto>_75' will be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
+nvcc warning : Support for offline compilation for architectures prior to '<compute/sm/lto>_75' will be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
+nvcc warning : Support for offline compilation for architectures prior to '<compute/sm/lto>_75' will be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
+Linking  /tmp/nccl-tests/build/all_reduce.o  > /tmp/nccl-tests/build/all_reduce_perf
+Linking  /tmp/nccl-tests/build/all_gather.o  > /tmp/nccl-tests/build/all_gather_perf
+nvcc warning : Support for offline compilation for architectures prior to '<compute/sm/lto>_75' will be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
+Linking  /tmp/nccl-tests/build/broadcast.o   > /tmp/nccl-tests/build/broadcast_perf
+Linking  /tmp/nccl-tests/build/reduce_scatter.o > /tmp/nccl-tests/build/reduce_scatter_perf
+nvcc warning : Support for offline compilation for architectures prior to '<compute/sm/lto>_75' will be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
+nvcc warning : Support for offline compilation for architectures prior to '<compute/sm/lto>_75' will be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
+Linking  /tmp/nccl-tests/build/reduce.o      > /tmp/nccl-tests/build/reduce_perf
+Linking  /tmp/nccl-tests/build/alltoall.o    > /tmp/nccl-tests/build/alltoall_perf
+nvcc warning : Support for offline compilation for architectures prior to '<compute/sm/lto>_75' will be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
+Linking  /tmp/nccl-tests/build/scatter.o     > /tmp/nccl-tests/build/scatter_perf
+nvcc warning : Support for offline compilation for architectures prior to '<compute/sm/lto>_75' will be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
+Linking  /tmp/nccl-tests/build/gather.o      > /tmp/nccl-tests/build/gather_perf
+nvcc warning : Support for offline compilation for architectures prior to '<compute/sm/lto>_75' will be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
+Linking  /tmp/nccl-tests/build/sendrecv.o    > /tmp/nccl-tests/build/sendrecv_perf
+nvcc warning : Support for offline compilation for architectures prior to '<compute/sm/lto>_75' will be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
+Linking  /tmp/nccl-tests/build/hypercube.o   > /tmp/nccl-tests/build/hypercube_perf
+nvcc warning : Support for offline compilation for architectures prior to '<compute/sm/lto>_75' will be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
+nvcc warning : Support for offline compilation for architectures prior to '<compute/sm/lto>_75' will be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
+nvcc warning : Support for offline compilation for architectures prior to '<compute/sm/lto>_75' will be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
+make[1]: Leaving directory '/tmp/nccl-tests/src'
+# nccl-tests version 2.18.5 nccl-headers=22501 nccl-library=22501
+# Collective test starting: all_reduce_perf
+# nThread 1 nGpus 2 minBytes 8 maxBytes 268435456 step: 2(factor) warmup iters: 1 iters: 20 agg iters: 1 validation: 1 graph: 0 unalign: 0
+#
+# Using devices
+#  Rank  0 Group  0 Pid   7475 on c47296167362 device  0 [0000:4f:00] NVIDIA A40
+#  Rank  1 Group  0 Pid   7475 on c47296167362 device  1 [0000:d6:00] NVIDIA A40
+#
+#                                                              out-of-place                       in-place          
+#       size         count      type   redop    root     time   algbw   busbw  #wrong     time   algbw   busbw  #wrong 
+#        (B)    (elements)                               (us)  (GB/s)  (GB/s)             (us)  (GB/s)  (GB/s)         
+           8             2     float     sum      -1    13.95    0.00    0.00       0    13.47    0.00    0.00       0
+          16             4     float     sum      -1    13.36    0.00    0.00       0    12.84    0.00    0.00       0
+          32             8     float     sum      -1    13.07    0.00    0.00       0    13.11    0.00    0.00       0
+          64            16     float     sum      -1    13.09    0.00    0.00       0    12.32    0.01    0.01       0
+         128            32     float     sum      -1    12.67    0.01    0.01       0    11.92    0.01    0.01       0
+         256            64     float     sum      -1    12.16    0.02    0.02       0    12.27    0.02    0.02       0
+         512           128     float     sum      -1    11.76    0.04    0.04       0    11.55    0.04    0.04       0
+        1024           256     float     sum      -1    11.64    0.09    0.09       0    11.76    0.09    0.09       0
+        2048           512     float     sum      -1    11.29    0.18    0.18       0    11.45    0.18    0.18       0
+        4096          1024     float     sum      -1    11.75    0.35    0.35       0    10.89    0.38    0.38       0
+        8192          2048     float     sum      -1    11.01    0.74    0.74       0    11.00    0.74    0.74       0
+       16384          4096     float     sum      -1    12.62    1.30    1.30       0    12.31    1.33    1.33       0
+       32768          8192     float     sum      -1    15.82    2.07    2.07       0    15.55    2.11    2.11       0
+       65536         16384     float     sum      -1    22.55    2.91    2.91       0    21.98    2.98    2.98       0
+      131072         32768     float     sum      -1    38.69    3.39    3.39       0    38.28    3.42    3.42       0
+      262144         65536     float     sum      -1    54.15    4.84    4.84       0    53.95    4.86    4.86       0
+      524288        131072     float     sum      -1    76.45    6.86    6.86       0    76.04    6.89    6.89       0
+     1048576        262144     float     sum      -1   120.30    8.72    8.72       0   121.62    8.62    8.62       0
+     2097152        524288     float     sum      -1   211.28    9.93    9.93       0   211.21    9.93    9.93       0
+     4194304       1048576     float     sum      -1   399.76   10.49   10.49       0   397.58   10.55   10.55       0
+     8388608       2097152     float     sum      -1   773.45   10.85   10.85       0   775.22   10.82   10.82       0
+    16777216       4194304     float     sum      -1  1536.36   10.92   10.92       0  1533.36   10.94   10.94       0
+    33554432       8388608     float     sum      -1  3062.15   10.96   10.96       0  3057.85   10.97   10.97       0
+    67108864      16777216     float     sum      -1  6098.06   11.00   11.00       0  6091.28   11.02   11.02       0
+   134217728      33554432     float     sum      -1  12182.8   11.02   11.02       0  12160.3   11.04   11.04       0
+   268435456      67108864     float     sum      -1  24328.6   11.03   11.03       0  24321.8   11.04   11.04       0
+# Out of bounds values : 0 OK
+# Avg bus bandwidth    : 4.53308 
+#
+# Collective test concluded: all_reduce_perf
+#
+
