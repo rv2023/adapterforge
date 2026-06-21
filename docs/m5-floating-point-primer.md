@@ -209,6 +209,50 @@ half-precision is **fp16**. So the Piece-2 experiment has a real fork:
 
 (Decision still open — confirm $/hr before any RunPod spend per the cost guardrail.)
 
+## 10b. Tensor Cores — the hardware behind the bf16 win
+
+(Added session 4, after the A40 run measured bf16 ~41% faster than fp32 — this explains *why*.)
+
+**Tensor Cores are physical hardware** — transistors NVIDIA etches into the GPU chip. PyTorch
+does NOT create them; it *uses* them via the stack (same as M0):
+
+```
+Your code (HF Trainer bf16=True)
+  ↓ PyTorch
+  ↓ cuBLAS / cuDNN   ← NVIDIA libs that dispatch a matmul to Tensor Cores
+  ↓ CUDA driver
+  ↓ GPU silicon      ← Tensor Cores physically live HERE
+```
+
+A GPU has **two** kinds of math units:
+- **CUDA cores** — general-purpose, do full fp32, one multiply-add at a time.
+- **Tensor Cores** — specialized: multiply a small **matrix tile in one shot**, but only accept
+  **low-precision inputs** (bf16/fp16). (Analogy: CUDA core = calculator doing one ×; Tensor
+  Core = a machine multiplying a whole grid at once, but only takes "small" numbers.)
+
+Training is mostly matmuls, so *which unit runs them* sets the speed:
+- **bf16 matmul** → 16-bit inputs fit Tensor Cores → fast path. ✅
+- **fp32 matmul** → 32-bit inputs too big → falls back to CUDA cores → slow path. ⏳
+
+**Two compounding reasons bf16 wins:** (1) Tensor Cores, (2) half the bytes = half the memory
+traffic. That's the ~1.7× (≈40%) we measured on the A40.
+
+**Honest asterisk — TF32:** Ampere+ *can* push fp32 through Tensor Cores in a truncated **TF32**
+mode (mantissa chopped to ~10 bits, fp32 range kept), enabled via
+`torch.backends.cuda.matmul.allow_tf32 = True`. It speeds fp32 up, but bf16 still wins (half the
+bytes + full Tensor-Core throughput) — which is why our gap stayed large. So precisely:
+*"fp32 runs on CUDA cores or truncated-TF32 Tensor Cores; bf16 runs on full Tensor Cores AND
+moves half the data."*
+
+**What to actually use:**
+
+| Situation | Use |
+|---|---|
+| Training on **Ampere+** (A40/A100/4090) | **bf16** (fast + stable) — the proven default |
+| Training on **Turing (T4)** — no bf16 | **fp16** |
+| Need **max precision** / debugging numerics | **fp32** (accept the slowdown) |
+| Stuck in fp32 on Ampere, want some speed | fp32 **+ TF32 enabled** |
+
 ## 11. Honest step-time measurement (for when we run it)
 
 1. **Warmup** — discard the first ~5–10 steps (CUDA kernel compile, cuDNN autotune, allocator

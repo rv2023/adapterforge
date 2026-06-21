@@ -66,7 +66,10 @@ float; the three QLoRA precisions and why fp32-vs-bf16 needs 4-bit OFF to be cle
 memory, bf16 = speed" are independent knobs (resolves the "but prod uses 4-bit" worry — we
 measure both A and B); honest step-time measurement (warmup, sync, median, hold-constant);
 dataloader/num_workers (prefetch; helps only if GPU is data-starved); where the MLOps
-lifecycle runs (GPU only for train + LLM inference; ~70% is CPU); the 3-tier compute model.
+lifecycle runs (GPU only for train + LLM inference; ~70% is CPU); the 3-tier compute model;
+**Tensor Cores** (physical NVIDIA hardware used via PyTorch→cuBLAS→CUDA→silicon; bf16 matmuls
+hit them, fp32 falls to CUDA cores or truncated TF32; bf16 wins on Tensor Cores + half the
+bytes — the *why* behind the 41% — see primer §10b for the "what to use" table).
 
 **RAN ON RUNPOD A40 (Piece 2 closed).** Results (`docs/m5-efficiency-results.md`,
 `results/m5-efficiency.log`):
