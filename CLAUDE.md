@@ -117,6 +117,8 @@ One shared base LLM (Qwen-1.5B) + three specialized models:
 | Student | bulk sentiment, cheap | 10k teacher-labeled headlines → DistilBERT | within 2–3 F1 pts of teacher |
 
 Boundaries: NO pretraining, NO RLHF, NO image/VLM. SFT/LoRA + distillation only.
+(NER + RAG analyst assistant deferred to **v2** — captured in PROJECT_PLAN Addendum 4;
+build only after M8 so the core stays mapped to the MLOps-platform JD.)
 
 ## Milestones, steps, expected outcomes (condensed — details in docs/PROJECT_PLAN.md)
 

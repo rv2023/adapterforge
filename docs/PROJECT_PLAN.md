@@ -397,3 +397,37 @@ where enforced, milestone.
 | Workspace/job resource resize | <1 min, no restart (JD target) |
 | End-to-end drift→promote loop | fully automated, zero human actions |
 | Run duration | no >20% regression vs trailing mean |
+
+---
+
+# ADDENDUM 4 — v2 / Future Extensions (post-M8, OUT of core scope)
+
+Deliberately **deferred** so the core stays mapped to the **MLOps-platform JD** (serving,
+scheduling, GPU, drift, CI/CD, routing). Build these only **after M8**, as a separate phase —
+they add product value + GenAI-app skills but shift the project's identity. Captured here so the
+ideas aren't lost (decision 2026-06-21: keep plan, park these as v2).
+
+## V2-A — Entity tagging (NER) — *moderate*
+- **What:** a token-classification model that extracts entities from a headline — companies,
+  tickers, instruments, bond/curve references ("10Y Treasury", "AAPL", "IG credit").
+- **Why it fits:** becomes a **4th heterogeneous model** → richer routing; the dashboard can show
+  per-entity sentiment ("Treasuries: bearish, Apple: bullish") instead of just headline-level.
+- **Needs:** NER-labeled data (or an NER teacher to distill from), a token-classification head
+  (not SEQ_CLS), entity-level F1 eval. ~1 week.
+- **Routing:** the firehose path would run student-sentiment **+** NER together to tag the stream.
+
+## V2-B — RAG analyst assistant — *major; changes project identity*
+- **What:** free-form analyst Q&A. Analyst asks a question → **retrieve** relevant headlines /
+  earnings summaries / student-tagged logs from a **vector DB** → a **generative** LLM answers,
+  grounded on the retrieved context.
+- **Why it's a different project:** our fine-tuned LLM is a *classifier/summarizer*, not a
+  generator/QA model. RAG needs: an **embedding model**, a **vector store**, a **retrieval
+  pipeline**, a **generative instruct LLM**, prompt/context assembly, and **RAG eval** (retrieval
+  relevance + answer faithfulness — hard to measure). This moves from *MLOps-platform engineer*
+  toward *GenAI-application builder* (a different JD). Weeks of work + more GPU cost.
+- **Reuses the platform:** the M1–M8 control plane / registry / drift / serving / observability
+  all still apply — RAG components would be *registered and served through the same platform*,
+  which is the honest tie-back (the platform is model-agnostic by design).
+
+**Sequencing:** finish Piece 5 → M6 → M7 → M8 first. Then V2-A (NER, fits routing), then V2-B
+(RAG, as an explicit new phase). Update the JD framing if pursuing V2-B (it's a GenAI-app story).
