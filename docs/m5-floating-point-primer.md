@@ -253,6 +253,32 @@ moves half the data."*
 | Need **max precision** / debugging numerics | **fp32** (accept the slowdown) |
 | Stuck in fp32 on Ampere, want some speed | fp32 **+ TF32 enabled** |
 
+## 10c. How work splits between CUDA cores and Tensor Cores
+
+(Added session 4 — follow-up to §10b.)
+
+**You don't divide it manually.** With `bf16=True`, PyTorch **autocast** + NVIDIA's
+**cuBLAS/cuDNN** route *each operation* to the right unit automatically, by op type + precision.
+
+| Runs on **Tensor Cores** (bf16/fp16/TF32) | Runs on **CUDA cores** |
+|---|---|
+| The big **matmuls** — attention `q/k/v/o`, MLP `gate/up/down`, all large linear layers (bulk of the FLOPs) | The **"glue"**: activations (SiLU/GELU), LayerNorm/RMSNorm, softmax, dropout, residual adds, embeddings, the **optimizer (Adam) update**, reductions, casts — **plus** any **fp32 matmul** not using TF32 |
+
+Within one step they **alternate**: `matmul (TC) → activation/norm/softmax (CUDA) → matmul (TC) → …`
+
+**The "mixed" in mixed precision:** even in bf16 training, autocast keeps numerically
+**sensitive** ops in **fp32 on CUDA cores** (softmax, normalization, loss, optimizer master
+weights) and only sends **matmuls/convs to bf16 Tensor Cores**. That mix = speed + stability.
+
+**Why this caps the speedup (ties to the 41%):** only the **matmul share** accelerates with
+bf16; the CUDA-core glue (norms/softmax/optimizer/elementwise) is memory-bound and barely
+speeds up. So the gain is bounded by how much of the step is matmuls vs glue (Amdahl's law).
+Transformers are very matmul-heavy → big bf16 win, but not a clean 2× everywhere.
+
+**One-liner:** *Tensor Cores do the big matmuls (bf16); CUDA cores do the surrounding
+elementwise/normalization/optimizer work (often fp32); autocast routes each op automatically,
+and only the matmul part gets the Tensor-Core speedup.*
+
 ## 11. Honest step-time measurement (for when we run it)
 
 1. **Warmup** — discard the first ~5–10 steps (CUDA kernel compile, cuDNN autotune, allocator
