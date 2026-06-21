@@ -14,6 +14,9 @@ trl
 accelerate
 bitsandbytes        # CUDA-only — provides 4-bit/NF4 (the B-row runs). Will not import on CPU.
 
+# M5 Piece 3 — distributed training (Ray Train data-parallel + NCCL)
+"ray[train]"        # TorchTrainer orchestration; spawns 1 worker/GPU + sets up the process group
+
 # data + tracking
 datasets
 mlflow

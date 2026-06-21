@@ -85,3 +85,47 @@ the second stays theory because it never has to.*
 - **Interview framing (say it plainly):** *"I have the theory + single-node NCCL benchmarks,
   not a physical IB fabric — and most candidates can't even explain GPUDirect RDMA."*
   A deliberately-acknowledged limit, not a failure.
+
+---
+
+## D. Ray Train data-parallel mechanics (how Piece 3 actually works)
+
+`pipelines/ray_finetune.py`. Captures the implementation learnings.
+
+### Who does what — Ray orchestrates, your code loads
+- **Ray Train** = orchestration only: spawn N worker processes, pin each to a GPU, wire up the
+  torch **process group** (so NCCL all-reduce works). It does NOT touch the model.
+- **`train_func`** runs *inside each worker* and does the loading: `from_pretrained` (the 4-bit
+  base) + `SFTTrainer(peft_config=...)` (the LoRA adapter).
+- So each worker independently loads its **own full 4-bit copy + adapter onto its own GPU** =
+  data parallelism (N complete copies, one per GPU).
+
+### Where the 4-bit model comes from + device placement
+- Qwen ships **bf16** on disk. The **4-bit model is born at `from_pretrained`** — bitsandbytes
+  quantizes bf16 → 4-bit (nf4 buckets) on the fly, straight into a device's VRAM. Never 4-bit
+  on disk.
+- A **4-bit model can't be `.to()`'d after creation** ("concrete poured in place"). So it must
+  load directly onto the target GPU. With no `device_map` it may land on CPU → HF Trainer's
+  auto-move-to-GPU then **crashes**.
+- Fix: `device_map={"": 0}` in the 4-bit branch. **Per-worker-safe** because Ray sets
+  `CUDA_VISIBLE_DEVICES` so each worker sees its GPU as `cuda:0`. (`device_map="auto"` is the
+  anti-pattern — it *shards* one model across GPUs = model parallelism, wrong here.)
+
+### How the data is partitioned (you don't tell Ray explicitly)
+- Each worker loads the **full** dataset, but HF Trainer — once distributed (via
+  `prepare_trainer` + Ray's process group) — **auto-inserts a `DistributedSampler`** that hands
+  each **rank** a **disjoint slice** of indices. No manual sharding.
+- `per_device_train_batch_size` is **per worker**; held constant → 2 workers = 2× distinct
+  samples/step (true **weak scaling**), no overlap.
+- Caveat: loading the full dataset on every worker is fine for our 2170 rows; for huge datasets
+  use **Ray Data** (`ray.data` + `get_dataset_shard`) to stream a shard per worker. Not needed here.
+
+### What actually gets all-reduced (reading the scaling result)
+- Only the **adapter** is trainable (base frozen) → only **tiny LoRA gradients** get all-reduced
+  (MBs, not GBs). So NCCL traffic is small → **scaling may be near-2× even on cheap PCIe** — not
+  a bug, it's *because* QLoRA syncs so little.
+- The interconnect lesson therefore shows up: **strongly in `nccl-tests`** (raw all-reduce
+  bandwidth, model-independent) and **weakly in our LoRA run** (little to sync). Full fine-tuning
+  (syncing all 1.5B gradients/step) is where the interconnect would really bite.
+- So Piece 3 yields **two complementary numbers:** the LoRA scaling ratio (likely ~2×) and the
+  nccl-tests busbw GB/s (the true interconnect capacity).
