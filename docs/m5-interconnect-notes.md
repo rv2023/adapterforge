@@ -37,19 +37,39 @@ Scaling to many GPUs is gated by sync speed. (JD: "interconnect-aware optimizati
 
 ---
 
-## B. Tensor-parallelism theory module (whiteboard-level, no code)
+## B. Data vs tensor parallelism — the two reasons to go multi-GPU
 
-Two ways to use multiple GPUs:
+**The misconception to kill:** data parallelism is NOT about VRAM. There are two *unrelated*
+reasons to use multiple GPUs (like 4-bit=memory vs bf16=speed earlier):
+
+| Reason | Technique | Model fits on 1 GPU? | Gives you |
+|---|---|---|---|
+| Model **too big** for one GPU's VRAM | **tensor/model parallelism** (split the *model*) | **No** | makes it **fit** |
+| Model **fits**, want it **faster** | **data parallelism** (full copy per GPU) | **Yes** | more **throughput/speed** |
+
+**Data parallelism does the OPPOSITE of saving VRAM:** every GPU holds a *full copy* of the
+model, so VRAM **per GPU** stays the same as the 1-GPU case (a bit *more*, for comms buffers)
+and **total** VRAM is **N× more**, not less. It buys **speed** — each GPU chews a different
+slice of the batch (~2× data/step); NCCL all-reduce just keeps the copies in sync.
 
 | | Data parallelism (we DO this) | Tensor parallelism (we LEARN only) |
 |---|---|---|
-| Idea | Each GPU holds a **full copy** of the model; each processes different data; average gradients | Cut a **single layer's matrix** into slices, one slice per GPU |
-| When | Model **fits** on one GPU | Model is **too big** for one GPU (e.g. 70B+) |
-| Our case | Qwen-1.5B fits → we do this on 2 GPUs | Never needed hands-on → theory only |
+| Splits the... | **data** (batch across GPUs) | **model** (a layer's matrix across GPUs) |
+| Each GPU holds | a **full copy** of the model | **a slice** of the model |
+| VRAM effect | same per GPU, N× total (no saving) | less per GPU (the point) |
+| When | model **fits** on one GPU | model **too big** for one GPU (70B+) |
+| Our case | Qwen-1.5B fits → 2-GPU hands-on (Piece 3) | never needed → theory only |
 
-**Why theory is enough here:** Qwen-1.5B fits on one GPU, so we never *need* to split a
-layer across GPUs. But interviewers ask, so know the contrast: data parallelism splits the
-**data**, tensor parallelism splits the **model**.
+**Why we rent 2 GPUs in Piece 3 even though Qwen-1.5B fits on 1:** we don't *need* them for
+capacity — we rent them purely to **learn + measure** distributed data-parallel training and
+the NCCL interconnect (the JD skills). It's a learning exercise, not a requirement.
+
+**Why tensor parallelism stays theory-only:** it's the *VRAM-driven* technique, and our model
+never overflows one GPU, so we never *need* it hands-on — just know the contrast.
+
+**One-liner:** *data parallelism replicates the model for SPEED (more VRAM, not less); tensor
+parallelism splits the model for CAPACITY. We do the first hands-on because our model fits;
+the second stays theory because it never has to.*
 
 **TODO:** [ ] whiteboard note: when does a model force tensor parallelism (VRAM math)?
 
