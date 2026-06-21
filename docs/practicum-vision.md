@@ -20,6 +20,7 @@ many INPUT STREAMS (continuous + batch)
    → VERDICT model (learns signal weights) → final verdict (Bull/Bear/Neutral) + TARGET PRICE
    → DASHBOARD
    → REPORT model generates daily/weekly/quarterly briefs, triggered when signals change
+   → ANALYST LLM Q&A: free-form questions → RAG over signals/verdicts/reports/logs → grounded answer
 ```
 
 ## Input streams (each = an Adapter, M1 SDK pattern)
@@ -49,6 +50,7 @@ The SDK is built for exactly this — "standardized ingestion across diverse sou
 | Verdict: direction **+ target price** ("trained on weights") | **meta-model / ensemble** over per-signal scores | **new + research-grade** ⚠️ |
 | Dashboard | **serving + observability** (M3 / M7) | **reuse** |
 | Daily/weekly report generation | **generative report writer** (generalize earnings summarizer; overlaps v2 **RAG**) | **new** (overlaps v2-B) |
+| **Analyst LLM Q&A** (free-form questions, grounded on signals/verdicts/reports/logs) | **RAG assistant** = vector DB + retrieval + **generative** LLM (this IS v2-B, folded into the practicum) | **new + major** ⚠️ |
 | "when signals change" trigger | the **drift/event → trigger chain** (M4) | **reuse** |
 
 ## The verdict target: directional + target price (chosen) — with guardrails
@@ -76,7 +78,11 @@ It's only worth anything if it's **falsifiable**, so the methodology is non-nego
 - **Phase 2** — per-signal classifiers + **entity→asset linking** (v2-A NER).
 - **Phase 3** — **fusion/consolidation** per asset + **directional verdict** + the **backtest framework**.
 - **Phase 4** — **target-price** head on top, under the backtest's leakage controls.
-- **Phase 5** — **report generation** (generative; v2-B RAG overlaps).
+- **Phase 5** — **report generation** (generative).
+- **Phase 6** — **Analyst LLM Q&A** (RAG): vector DB over signals/verdicts/reports/logs +
+  retrieval + a **generative** LLM (NOT the classifier) → grounded answers. This is **v2-B RAG**,
+  folded in as the practicum's analyst-facing layer. Eval = retrieval relevance + answer
+  faithfulness/groundedness (cite the signals it used). Heaviest phase; do last.
 
 **Sequencing rule:** finish the core platform first — it's the engine the practicum runs on. Build
 the practicum as a parallel/after track, signal-by-signal, eval-first.
