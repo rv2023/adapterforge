@@ -28,11 +28,12 @@ python -c "import torch; assert torch.cuda.is_available(), 'No CUDA GPU visible'
 print('GPU:', torch.cuda.get_device_name(0))"
 
 # --- 1. deps ---
-# Some RunPod base images ship `blinker` via the OS package manager (no pip RECORD),
-# which makes pip refuse to upgrade it ("uninstall-no-record-file"). Install a fresh
-# pip-managed copy first so the requirements install doesn't choke on it.
-pip install --ignore-installed blinker
-pip install -r requirements-gpu.txt
+# RunPod base images ship several Python packages via the OS package manager (blinker,
+# cryptography, ...) with no pip RECORD, so pip can't uninstall them to upgrade
+# ("uninstall-no-record-file"). --ignore-installed tells pip to leave the existing
+# (debian) packages alone and just install fresh copies of what we need. torch is NOT
+# in this file, so the template's CUDA build is left untouched.
+pip install --ignore-installed -r requirements-gpu.txt
 
 # --- 2. ensure the instruction data exists (regenerate if missing) ---
 if [ ! -f data/instruction/train.jsonl ]; then
