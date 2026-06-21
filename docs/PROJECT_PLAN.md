@@ -431,3 +431,21 @@ ideas aren't lost (decision 2026-06-21: keep plan, park these as v2).
 
 **Sequencing:** finish Piece 5 → M6 → M7 → M8 first. Then V2-A (NER, fits routing), then V2-B
 (RAG, as an explicit new phase). Update the JD framing if pursuing V2-B (it's a GenAI-app story).
+
+---
+
+# ADDENDUM 5 — v3 / Kellogg Asset-Management Practicum (built ON the platform)
+
+A larger vision: a **multi-signal asset-intelligence product** — many input streams (tweets,
+insider/political activity, macro, news, smart money, fundamentals, filings) → per-signal
+Bull/Bear/Neutral ratings → consolidation per asset/ETF → a verdict model (direction + target
+price) → dashboard + auto-generated reports. It is built **on** the AdapterForge platform (the
+reusable engine), not instead of it. Two goals coexist: the **MLOps JD = the engine**; the
+**practicum = a product on the engine**.
+
+**Full plan, component mapping (reuse/new/hard), the target-price guardrails (backtesting +
+leakage discipline), risk flags, and the phased rollout: see `docs/practicum-vision.md`.**
+
+**Sequencing:** core platform (M1–M8) first — it's what the practicum runs on. Then build the
+practicum eval-first, signal-by-signal. (Decision 2026-06-21: verdict target = directional **+**
+target price, with a non-negotiable backtest framework.)
