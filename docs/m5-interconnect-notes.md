@@ -31,9 +31,11 @@ Scaling to many GPUs is gated by sync speed. (JD: "interconnect-aware optimizati
   - `NCCL_IB_DISABLE` — turn InfiniBand transport on/off.
   - `NCCL_SOCKET_IFNAME` — pick which network interface NCCL uses.
 
-**Deliverable / TODO (on the 2-GPU pod):**
-- [ ] Run `nccl-tests` all_reduce; record **bus bandwidth (GB/s)**: `__________`
-- [ ] One-paragraph written explainer of the hierarchy + GPUDirect RDMA in my own words.
+**Deliverable (done on the 2× A40 pod, Piece 3):**
+- [x] Ran `nccl-tests` all_reduce → **bus bandwidth ≈ 4.53 GB/s** (2× A40, PCIe; NVLink would be
+  ~10–100×). See `results/nccl-tests.log`, `docs/m5-distributed-results.md`.
+- [ ] One-paragraph written explainer of the hierarchy + GPUDirect RDMA *in Karthik's own words*
+  (rule 5 — his to write).
 
 ---
 
@@ -71,7 +73,37 @@ never overflows one GPU, so we never *need* it hands-on — just know the contra
 parallelism splits the model for CAPACITY. We do the first hands-on because our model fits;
 the second stays theory because it never has to.*
 
-**TODO:** [ ] whiteboard note: when does a model force tensor parallelism (VRAM math)?
+### Tensor parallelism — the VRAM math (whiteboard note)
+
+**When is TP *forced*?** When the VRAM a model needs exceeds **one GPU's** capacity. Budget:
+
+- **Weights** = params × bytes/param: fp32=4, bf16/fp16=2, 4-bit=0.5.
+- **Training adds** (on top of weights): gradients (~same size as *trainable* params), optimizer
+  state (**Adam = 2 moments**, usually fp32), and activations (scale with batch×seq×layers).
+- **Rules of thumb:**
+  - **Inference** ≈ params × 2 bytes (bf16).  7B ≈ **14 GB**; 70B ≈ **140 GB**.
+  - **Full training** (mixed precision + Adam) ≈ params × **~16 bytes**.  7B ≈ **~112 GB**.
+
+So on an 80 GB A100: **70B inference (140 GB) doesn't fit → TP forced.** **7B full training
+(~112 GB) doesn't fit → TP (or sharding) forced.**
+
+**How TP splits the model:** take a layer's weight matrix (e.g. 4096×4096), **slice it across N
+GPUs** (each holds 1/N of the matrix). Each GPU does its **partial** matmul, then they **combine**
+the pieces with an NCCL collective (all-gather / all-reduce). Net: each GPU stores only **1/N** of
+that layer's weights → the model fits.
+
+**The cost (why TP stays intra-node):** TP communicates **inside every layer**, multiple times per
+forward+backward — far more chatter than data parallelism (which syncs once per step). So TP demands
+a **very fast interconnect (NVLink)** and is kept **within one node**; data parallelism spans nodes.
+(Maps to the comm-cost hierarchy in §A: NVLink ≫ PCIe ≫ network.)
+
+**Other splits (name-drop):** *pipeline parallelism* (split layers into stages across GPUs) and
+*FSDP / ZeRO* (shard params+grads+optimizer across data-parallel GPUs to cut memory) — same goal,
+fit a model that won't fit.
+
+**Why AdapterForge never needs TP:** Qwen-1.5B ≈ **3 GB** bf16 (≈ **0.75 GB** in 4-bit) + a tiny
+LoRA adapter → fits any GPU with room to spare. So TP stays **theory-only**; we did **data**
+parallelism hands-on (Piece 3) because that's the technique our fitting model actually uses.
 
 ---
 
