@@ -7,9 +7,9 @@ Sessions: 2026-06-18/19/21. Owner: Karthik. Tutor-mode learning.
 **bf16 cut step time 41.6% (no 4-bit) / 37.6% (4-bit)** — ~8× past the JD ≥5% bar; dataloader
 workers +3.92%. GPU work moved to **RunPod (Colab dropped)**. Results: `docs/m5-efficiency-results.md`
 + `results/m5-efficiency.log`.
-**M5 Piece 3: IN PROGRESS** — Ray Train data-parallel scaling (1-GPU vs 2-GPU) + nccl-tests on a
-2× A40 pod (`pipelines/ray_finetune.py`, `scripts/runpod_ray.sh`). Code + concepts done; pod run
-debugging in progress (Session 5 below). Next: Piece 5 (distill).
+**M5 Piece 3: DONE** — Ray Train data-parallel on 2× A40: **scaling 2.0×** (16.29→32.58 samples/s,
+same ~29.5s runtime) + **nccl-tests busbw ≈ 4.53 GB/s**. Near-2× even on PCIe (tiny LoRA sync), as
+predicted. Results: `docs/m5-distributed-results.md`. Tensor parallelism stays theory-only. Next: Piece 5 (distill).
 Session 4 (2026-06-21) below covers the number-format deep dive + Piece-2 design + RunPod switch.
 
 ## Session 5 (2026-06-21) — Piece 3 (Ray data-parallel scaling + NCCL) + training concepts
@@ -45,8 +45,14 @@ throughput (scaling) + nccl-tests all-reduce bandwidth.
 `DATA_DIR` failed → made it absolute via `__file__`; (3) reaffirmed `--system-site-packages`
 venv + ship-data-to-pod from Piece 2. Run on **2× A40** (PCIe), in progress.
 
-**Status:** debugging the pod run; expect LoRA scaling ~near-2× (tiny sync) + nccl-tests busbw
-as the real interconnect number. Then Piece 5 (distillation).
+**RESULT (DONE):** ran on 2× A40 (PCIe). **Scaling = 32.58/16.29 = 2.0×** (same ~29.5s runtime,
+2× data → 2× throughput); **nccl-tests busbw ≈ 4.53 GB/s**. Near-2× even on PCIe confirms the
+"tiny LoRA sync → interconnect barely matters" prediction; nccl-tests carries the true interconnect
+number. `device_map={"":0}` made 4-bit+DDP work. Two footnotes: `result.metrics` came back None
+(harvested from worker reports; fix = `train_func` prints `out.metrics` throughput directly);
+2-GPU train_loss 8.6 (throwaway, hints 4bit+DDP not numerically clean — irrelevant for timing).
+Full writeup: `docs/m5-distributed-results.md`. **Decision: NO hands-on tensor parallelism** (model
+fits 1 GPU → would be artificial; JD wants theory only). **Next: Piece 5 (distillation).**
 
 ## Session 4 (2026-06-21) — Piece 2 design + number-format deep dive + RunPod switch
 

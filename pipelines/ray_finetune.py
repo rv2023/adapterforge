@@ -93,6 +93,9 @@ def train_func(config):
     trainer = prepare_trainer(trainer)
     out = trainer.train()
     ray.train.report(out.metrics)
+    # Harvest directly from the worker: result.metrics at the controller can come back None
+    # in Ray Train v2, so print the throughput here where out.metrics is always populated.
+    print(f"[worker] train_samples_per_second={out.metrics.get('train_samples_per_second')}")
 
 
 def main(num_workers: int):
