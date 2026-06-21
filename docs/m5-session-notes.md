@@ -6,8 +6,47 @@ Sessions: 2026-06-18/19/21. Owner: Karthik. Tutor-mode learning.
 **M5 Piece 2: DONE** — bf16 efficiency experiment ran on a RunPod A40:
 **bf16 cut step time 41.6% (no 4-bit) / 37.6% (4-bit)** — ~8× past the JD ≥5% bar; dataloader
 workers +3.92%. GPU work moved to **RunPod (Colab dropped)**. Results: `docs/m5-efficiency-results.md`
-+ `results/m5-efficiency.log`. Next: Pieces 3 (Ray/NCCL), 5 (distill).
++ `results/m5-efficiency.log`.
+**M5 Piece 3: IN PROGRESS** — Ray Train data-parallel scaling (1-GPU vs 2-GPU) + nccl-tests on a
+2× A40 pod (`pipelines/ray_finetune.py`, `scripts/runpod_ray.sh`). Code + concepts done; pod run
+debugging in progress (Session 5 below). Next: Piece 5 (distill).
 Session 4 (2026-06-21) below covers the number-format deep dive + Piece-2 design + RunPod switch.
+
+## Session 5 (2026-06-21) — Piece 3 (Ray data-parallel scaling + NCCL) + training concepts
+
+Goal: distributed data-parallel fine-tune via Ray Train on 2 GPUs, measure 1-GPU vs 2-GPU
+throughput (scaling) + nccl-tests all-reduce bandwidth.
+
+**Built (Karthik wrote ray_finetune.py bodies, reviewed):**
+- `pipelines/ray_finetune.py` — Ray `TorchTrainer` wrapping QLoRA Qwen-1.5B; `train_func` per
+  worker (4-bit load + LoRA + `RayTrainReportCallback` + `prepare_trainer`); runs at
+  `num_workers=1` then `2`; reports `out.metrics` throughput. `device_map={"":0}` (per-worker
+  safe), `DATA_DIR` absolute via `__file__`.
+- `scripts/runpod_ray.sh` — 2-GPU runbook (venv, CUDA≥2 gate, 1- vs 2-GPU runs, best-effort
+  nccl-tests). `requirements-gpu.txt` += `ray[train]`.
+
+**Concepts captured (durable):**
+- `docs/m5-interconnect-notes.md` §B (data vs tensor parallelism = speed vs capacity; data
+  parallelism does NOT save VRAM; we rent 2 GPUs to LEARN, not because the model needs it) +
+  §D (Ray mechanics: Ray orchestrates/your code loads; 4-bit born at `from_pretrained` &
+  device placement; `DistributedSampler` auto-partitions by rank; only adapter grads
+  all-reduced → near-2× even on PCIe; nccl-tests carries the true interconnect lesson).
+- `docs/m5-training-concepts.md` (NEW) — full training step (fwd+bwd+all-reduce+update) vs
+  forward-only; **validation** (forward-only score for generalization/overfit/selection);
+  **train/val/test** (validation gets biased by decisions → test touched once stays honest;
+  AdapterForge frozen test set + M3 hash); "training as a stopwatch" Piece 2 (precision) vs
+  Piece 3 (GPU count).
+- `docs/m5-floating-point-primer.md` §10b/§10c — Tensor Cores (NVIDIA silicon via
+  PyTorch→cuBLAS→CUDA; bf16 matmuls hit them, fp32→CUDA cores/TF32) + how work splits
+  (matmuls→Tensor Cores, glue→CUDA cores; only matmul share accelerates → Amdahl-bounded).
+
+**Pod gotchas hit + fixed:** (1) `ray[train]` must be **unquoted** in a requirements file
+(quotes are shell-only); (2) **Ray changes each worker's CWD** to its session dir → relative
+`DATA_DIR` failed → made it absolute via `__file__`; (3) reaffirmed `--system-site-packages`
+venv + ship-data-to-pod from Piece 2. Run on **2× A40** (PCIe), in progress.
+
+**Status:** debugging the pod run; expect LoRA scaling ~near-2× (tiny sync) + nccl-tests busbw
+as the real interconnect number. Then Piece 5 (distillation).
 
 ## Session 4 (2026-06-21) — Piece 2 design + number-format deep dive + RunPod switch
 
