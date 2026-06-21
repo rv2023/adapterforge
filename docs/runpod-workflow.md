@@ -36,12 +36,24 @@ batch 8.
    git clone <your-fork-url> adapterforge && cd adapterforge
    # or: git pull, if the pod's volume already has it
    ```
-3. **Run the experiment:**
+3. **Ship the data** — `data/` is **gitignored** and `instruction_format` reads a local
+   validated parquet that isn't cloned, so it is **NOT regenerable on a fresh pod**. Get
+   `data/instruction/train.jsonl` onto the pod by one of:
+   - **git force-add** (quickest, no keys): on the laptop
+     `git add -f data/instruction/*.jsonl && git commit -m "temp" && git push`, then
+     `git pull` on the pod (un-vendor with `git rm --cached` afterward);
+   - **`scp`** (needs your SSH pubkey registered in RunPod *before* pod start);
+   - **`runpodctl send/receive`** (one-time code, no keys);
+   - **`dvc pull`** (the proper way once AWS creds + dvc are on the pod).
+4. **Run the experiment:**
    ```bash
    bash scripts/runpod_efficiency.sh
    ```
-   This installs `requirements-gpu.txt`, regenerates `data/instruction/` if absent,
-   runs all 4 timing runs, and tees output to `results/m5-efficiency.log`.
+   It creates a `--system-site-packages` venv (keeps the template's CUDA torch, dodges the
+   debian-`pip`-uninstall trap), installs `requirements-gpu.txt`, **hard-fails if the data is
+   missing**, runs the 5 timing runs, and tees output to `results/m5-efficiency.log`.
+   Do **not** reinstall torch — the venv inherits the template's CUDA build (a wrong-CUDA
+   wheel will make `cuda.is_available()` False, e.g. a cu13 wheel on an A40's 12.8 driver).
 
 ## Getting the results back (durability)
 

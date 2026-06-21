@@ -3,9 +3,10 @@
 Sessions: 2026-06-18/19/21. Owner: Karthik. Tutor-mode learning.
 **M5 Piece 1: FULLY DONE** — QLoRA adapter beats the baseline AND is governed production
 (macro-F1 **0.8477** vs **0.6885**, registered `fpb-sentiment` v14, promoted via M3 gate).
-**M5 Piece 2: DESIGNED + CODED, not yet run** — bf16 efficiency experiment
-(`pipelines/efficiency_experiment.py`) ready; GPU work moved to **RunPod (Colab dropped)`;
-remaining = add the dataloader run, then rent the pod. Next: Pieces 3 (Ray/NCCL), 5 (distill).
+**M5 Piece 2: DONE** — bf16 efficiency experiment ran on a RunPod A40:
+**bf16 cut step time 41.6% (no 4-bit) / 37.6% (4-bit)** — ~8× past the JD ≥5% bar; dataloader
+workers +3.92%. GPU work moved to **RunPod (Colab dropped)**. Results: `docs/m5-efficiency-results.md`
++ `results/m5-efficiency.log`. Next: Pieces 3 (Ray/NCCL), 5 (distill).
 Session 4 (2026-06-21) below covers the number-format deep dive + Piece-2 design + RunPod switch.
 
 ## Session 4 (2026-06-21) — Piece 2 design + number-format deep dive + RunPod switch
@@ -67,9 +68,26 @@ measure both A and B); honest step-time measurement (warmup, sync, median, hold-
 dataloader/num_workers (prefetch; helps only if GPU is data-starved); where the MLOps
 lifecycle runs (GPU only for train + LLM inference; ~70% is CPU); the 3-tier compute model.
 
-**Next:** add the one `num_workers=4` run (skeleton given) → review → **rent the RunPod pod**
-(confirm $/hr ~$0.40, Ampere+ ≥24 GB, set MLFLOW_TRACKING_URI) → run `scripts/runpod_efficiency.sh`
-→ record the % gains → teardown. Then Piece 3 (Ray/NCCL), Piece 5 (distillation).
+**RAN ON RUNPOD A40 (Piece 2 closed).** Results (`docs/m5-efficiency-results.md`,
+`results/m5-efficiency.log`):
+- **bf16 vs fp32, no 4-bit: 41.6% faster** ✅; **with 4-bit: 37.6%** ✅ (4-bit's dequant eats a
+  little, as predicted); **dataloader workers=4: 3.92%** (compute-bound, small, as predicted).
+- Why ~40% not ~5%: Ampere fp32 skips Tensor Cores, bf16 uses them → ~1.7×. JD's "5%" is a
+  conservative floor; smashed it. StepTimer median (41.6%) ≈ Trainer full-run (~40%) → method sound.
+- **"4-bit = memory, bf16 = speed" proven in data:** same precision, 4-bit ON is ~14% SLOWER
+  (24.56→28.10 s bf16) — buys memory, costs speed. Independent knobs.
+
+**Pod gotchas hit + fixed (folded into the runbook):** (1) debian-managed pip packages
+(blinker/cryptography) block `pip` uninstall → fixed with a `--system-site-packages` venv;
+(2) a blanket `--ignore-installed` clobbered the CUDA torch with a cu13 wheel the A40's
+CUDA-12.8 driver was too old for → don't reinstall torch, the venv inherits the system one;
+(3) `data/` is gitignored + `instruction_format` reads a local parquet → **data must be shipped
+to the pod** (used a temp git force-add, then un-vendored). `scripts/runpod_efficiency.sh`
+rewritten accordingly; `peak_vram_gb` was lost (pod-local MLflow, no remote server) → reinforces
+the `MLFLOW_TRACKING_URI` decision.
+
+**Next:** Piece 3 (Ray Train + 2-GPU NCCL on RunPod — confirm $/hr; theory stub at
+`docs/m5-interconnect-notes.md`), Piece 5 (distillation teacher→DistilBERT + distill.yml).
 
 ## Session 3 (2026-06-19) — register + promote the adapter (Piece 1 close)
 
