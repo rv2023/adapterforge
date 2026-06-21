@@ -93,6 +93,19 @@ make lineage       # docker compose up marquez
 
 ---
 
+## Compute tiers (where work runs) — see docs/operating-model.md
+
+Develop free, execute paid, always tear down. Never run on a GPU what a CPU can do.
+- **Tier 1 — Local (laptop CPU, $0):** all CPU work + writing/smoke-testing GPU code
+  before it ships up (M1–M4 + plumbing, ~70%).
+- **Tier 2 — RunPod (rented GPU, per-minute):** GPU *learning* runs — QLoRA fine-tune,
+  bf16 efficiency, Ray/NCCL, vLLM benchmark, MIG lab (M5, M6). **Colab dropped.**
+- **Tier 3 — Own cluster (EKS GPU via Terraform, per-node-hour):** platform-level GPU
+  work — K8s scheduling, GPU Operator, Kueue, observability, RCA, routing (M7, M8).
+- Cost guardrail applies to Tiers 2 **and** 3: confirm $/hr first, tear down after.
+
+---
+
 ## Scope (what the models do)
 
 One shared base LLM (Qwen-1.5B) + three specialized models:
@@ -170,6 +183,12 @@ Boundaries: NO pretraining, NO RLHF, NO image/VLM. SFT/LoRA + distillation only.
   `s3://adapterforge-dvc-073053153137/dvcstore` (us-east-1); **M2 baseline:
   70/15/15 stratified split, seed=42 (frozen test), macro-F1, class_weight=balanced,
   C=10; MLflow backend sqlite:///mlflow.db, experiment `m2-baseline`.**
+- M5 decisions: **GPU runs on RunPod, Colab dropped** (3-tier model, docs/operating-model.md);
+  **GPU MLflow logs via `MLFLOW_TRACKING_URI` → remote/cloud tracking server** (prereq: that
+  server is a Tier-3 cloud-infra component; `results/m5-efficiency.log` is the interim safety
+  net); Piece-2 efficiency experiment levers = **fp32 vs bf16 × 4-bit on/off + a dataloader-
+  workers pair** (`pipelines/efficiency_experiment.py`); Kubeflow stays an **M8 stretch**
+  (Dagster primary).
 - Blockers: none
 
 ## Session workflow

@@ -1,10 +1,75 @@
 # M5 Session Notes — LLM Fine-Tuning (Piece 1: DONE — registered + promoted)
 
-Sessions: 2026-06-18/19. Owner: Karthik. Tutor-mode learning.
-**M5 Piece 1 status: FULLY DONE — QLoRA adapter beats the baseline AND is now governed
-production.** macro-F1 **0.8477** vs baseline **0.6885** (same sealed test set); registered
-as `fpb-sentiment` v14 and promoted through the M3 gate → LLM is production. Next: Pieces 2
-(efficiency), 3 (Ray/NCCL), 5 (distillation).
+Sessions: 2026-06-18/19/21. Owner: Karthik. Tutor-mode learning.
+**M5 Piece 1: FULLY DONE** — QLoRA adapter beats the baseline AND is governed production
+(macro-F1 **0.8477** vs **0.6885**, registered `fpb-sentiment` v14, promoted via M3 gate).
+**M5 Piece 2: DESIGNED + CODED, not yet run** — bf16 efficiency experiment
+(`pipelines/efficiency_experiment.py`) ready; GPU work moved to **RunPod (Colab dropped)`;
+remaining = add the dataloader run, then rent the pod. Next: Pieces 3 (Ray/NCCL), 5 (distill).
+Session 4 (2026-06-21) below covers the number-format deep dive + Piece-2 design + RunPod switch.
+
+## Session 4 (2026-06-21) — Piece 2 design + number-format deep dive + RunPod switch
+
+Goal: set up the **bf16 efficiency experiment** (JD "≥5% step-time"). Most of the session
+was a from-scratch teaching of how numbers are stored (Karthik asked to go all the way to
+the metal), then the experiment design, then standardizing GPU work on RunPod.
+
+**Teaching delivered (captured durably, not just in chat):**
+- `docs/m5-floating-point-primer.md` — **the big one**, three parts:
+  - Part 1: bits → 2^N values; sign/exponent/mantissa as scientific notation (exponent =
+    range/scale, mantissa = precision); the `×0.301` base-2↔base-10 bridge; fp32 range
+    (~10^±38) + precision (~7 digits) derived; the **ExMy** naming; fp32/bf16/fp16/fp8
+    (E4M3/E5M2) table; worked **8.1** forward+backward, **8.2** contrast, 8.1 across all
+    formats; why training picks bf16 (gradients need *range*, not digits).
+  - Part 2: 4-bit quantization = **buckets** (T-shirt-size menu; "bucket #6" = 6th menu
+    item; lossy like JPEG not ZIP); menu values come from the data's range (NF4 packs near
+    zero); how-many-buckets = 2^bits; why uncompress (labels aren't numbers; only a sliver
+    at a time); the three coexisting precisions in QLoRA.
+  - Part 3: the two Qwen sizes are different models (dev 0.5B vs real 1.5B); frozen base +
+    trainable adapter (textbook + sticky-notes); what a "layer" is + per-step uncompress;
+    Piece 1 (quality/F1) vs Piece 2 (speed, throwaway); **4-bit = memory opt, bf16 = speed
+    opt, independent**; the LOCKED experiment design.
+- `docs/m5-interconnect-notes.md` — STUB for Piece 3 (RoCE/IB hierarchy, GPUDirect RDMA,
+  NCCL knobs, tensor- vs data-parallelism, the honest single-node-only gap). Numbers TBD on
+  the 2-GPU pod.
+
+**Piece 2 experiment built (`pipelines/efficiency_experiment.py`) — Karthik wrote it, reviewed:**
+- 2×2 grid + 1 extra: fp32 vs bf16 × 4-bit OFF/ON (rows A/B), plus a **dataloader-workers**
+  pair (compare A2 `num_workers=0` vs a new `num_workers=4` run) — the 3rd JD lever.
+- `StepTimer(TrainerCallback)`: `cuda.synchronize()` then `perf_counter()` at `on_step_end`;
+  anchors at end of warmup (append once `step_count >= N_WARMUP`) → 50 clean steady-state
+  deltas; median. **Throwaway runs** (no save), 10 warmup + 50 measured, batch 8.
+  Metrics → `median_step_time_s`, `samples_per_sec`, `peak_vram_gb`.
+- Review fixes Karthik made: memory cleanup between runs (`del`+`gc.collect()`+`empty_cache()`,
+  ordered so the previous model is freed before the next loads — avoids 2 models at once);
+  off-by-one in the timer; dead code removed; `import gc`.
+- **Honest expectations documented:** B (4-bit on) may show <5% (dequant overhead masks it);
+  dataloader pair likely ~0% (1.5B is compute-bound, not data-starved) — both are *findings*.
+
+**Decisions locked this session:**
+- **GPU runs on RunPod; Colab dropped.** 3-tier operating model written: `docs/operating-model.md`
+  + summarized in CLAUDE.md. Tier 1 local/CPU (free, ~70%), Tier 2 RunPod (per-min, M5/M6
+    learning), Tier 3 own EKS cluster (per-node-hr, M7/M8 platform work). Cost guardrail on 2 & 3.
+- **MLflow logs via `MLFLOW_TRACKING_URI` → remote/cloud server** (operator mindset: prod
+  tracking lives in cloud infra). No code change (mlflow reads the env var). Honest caveat:
+  that server is a Tier-3 component not yet stood up → `results/m5-efficiency.log` is the
+  interim safety net.
+- **Kubeflow stays an M8 stretch** (Dagster primary) — confirmed, no change.
+- RunPod plumbing (boilerplate): `requirements-gpu.txt` (no torch — keep template's CUDA
+  build; bitsandbytes here), `scripts/runpod_efficiency.sh` (CUDA gate + auto torch-wheel
+  fallback + data regen + tee to log), `docs/runpod-workflow.md` (rent→run→**teardown**, cost).
+
+**Concepts Karthik now owns (this session):** floating point end-to-end (forward+backward,
+all formats); why bf16 (range over precision for gradients); 4-bit = lossy bucketing, not a
+float; the three QLoRA precisions and why fp32-vs-bf16 needs 4-bit OFF to be clean; "4-bit =
+memory, bf16 = speed" are independent knobs (resolves the "but prod uses 4-bit" worry — we
+measure both A and B); honest step-time measurement (warmup, sync, median, hold-constant);
+dataloader/num_workers (prefetch; helps only if GPU is data-starved); where the MLOps
+lifecycle runs (GPU only for train + LLM inference; ~70% is CPU); the 3-tier compute model.
+
+**Next:** add the one `num_workers=4` run (skeleton given) → review → **rent the RunPod pod**
+(confirm $/hr ~$0.40, Ampere+ ≥24 GB, set MLFLOW_TRACKING_URI) → run `scripts/runpod_efficiency.sh`
+→ record the % gains → teardown. Then Piece 3 (Ray/NCCL), Piece 5 (distillation).
 
 ## Session 3 (2026-06-19) — register + promote the adapter (Piece 1 close)
 

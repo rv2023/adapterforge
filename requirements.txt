@@ -21,11 +21,13 @@ dagster
 dagster-webserver
 openlineage-python
 
-# M5 — LLM fine-tuning (QLoRA). CPU torch installs here for the smoke test;
-# bitsandbytes is CUDA-only -> install that on Colab, NOT on this box.
+# M5 — LLM fine-tuning (QLoRA). CPU torch installs here for local smoke tests.
+# For GPU runs we use RunPod (not Colab) — see requirements-gpu.txt +
+# docs/runpod-workflow.md. bitsandbytes (4-bit) is CUDA-only: install it there,
+# NOT on this CPU box.
 torch
 transformers
 peft
 trl
 accelerate
-# bitsandbytes            # GPU-only; Colab/RunPod only, do not install locally
+# bitsandbytes            # GPU-only; installed via requirements-gpu.txt on RunPod

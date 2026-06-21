@@ -1,0 +1,24 @@
+# GPU runtime deps for RunPod (CUDA). M5 fine-tuning + efficiency experiment.
+#
+#   pip install -r requirements-gpu.txt
+#
+# ASSUMES a RunPod "PyTorch" template, where a CUDA build of torch is already
+# installed. We deliberately do NOT list torch here — reinstalling it risks
+# pulling a CPU wheel over the pod's CUDA one. Verify with:  python -c "import
+# torch; print(torch.cuda.is_available())"  -> must print True before running.
+
+# LLM fine-tuning stack
+transformers
+peft
+trl
+accelerate
+bitsandbytes        # CUDA-only — provides 4-bit/NF4 (the B-row runs). Will not import on CPU.
+
+# data + tracking
+datasets
+mlflow
+
+# data-gen path (pipelines.instruction_format -> baseline.load_data pulls flare-fpb)
+scikit-learn
+pandas
+pyarrow
