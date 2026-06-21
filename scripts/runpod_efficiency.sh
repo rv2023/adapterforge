@@ -28,6 +28,10 @@ python -c "import torch; assert torch.cuda.is_available(), 'No CUDA GPU visible'
 print('GPU:', torch.cuda.get_device_name(0))"
 
 # --- 1. deps ---
+# Some RunPod base images ship `blinker` via the OS package manager (no pip RECORD),
+# which makes pip refuse to upgrade it ("uninstall-no-record-file"). Install a fresh
+# pip-managed copy first so the requirements install doesn't choke on it.
+pip install --ignore-installed blinker
 pip install -r requirements-gpu.txt
 
 # --- 2. ensure the instruction data exists (regenerate if missing) ---
