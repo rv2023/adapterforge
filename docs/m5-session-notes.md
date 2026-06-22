@@ -9,8 +9,50 @@ workers +3.92%. GPU work moved to **RunPod (Colab dropped)**. Results: `docs/m5-
 + `results/m5-efficiency.log`.
 **M5 Piece 3: DONE** — Ray Train data-parallel on 2× A40: **scaling 2.0×** (16.29→32.58 samples/s,
 same ~29.5s runtime) + **nccl-tests busbw ≈ 4.53 GB/s**. Near-2× even on PCIe (tiny LoRA sync), as
-predicted. Results: `docs/m5-distributed-results.md`. Tensor parallelism stays theory-only. Next: Piece 5 (distill).
+predicted. Results: `docs/m5-distributed-results.md`. Tensor parallelism stays theory-only.
+**M5 Piece 5: IN PROGRESS** — distillation (teacher→DistilBERT). **Step 1 DONE: 23,279 unlabeled
+headlines** collected via Alpha Vantage (`collect_headlines.py`). Concepts: `docs/m5-distillation-concepts.md`.
+Next: Step 2 teacher soft-labeling (GPU pod). Also: NER+RAG=v2, Kellogg practicum=v3 (Addenda 4/5).
 Session 4 (2026-06-21) below covers the number-format deep dive + Piece-2 design + RunPod switch.
+
+## Session 6 (2026-06-22) — Piece 5 distillation: design + Step 1 (collect headlines) + scope extensions
+
+Goal: distill the QLoRA teacher into a cheap DistilBERT student. Plus captured big scope decisions.
+
+**Step 1 DONE — collected the unlabeled headline pool:**
+- `pipelines/collect_headlines.py` + parameterized `RestAPIAdapter` (topics/tickers/time_from/time_to,
+  with a "need topics or tickers" guard; backward-compatible — callers pass an arg).
+- Strategy that worked: **25 disjoint 2-week time windows** on `financial_markets` (≈1 year) — distinct
+  windows → minimal dedup → **23,279 unique headlines** (blew past the 10k target in ONE day, within the
+  free-tier 25-call budget). `build_windows()` generates the windows; `main()` accumulate-merges across
+  runs (load existing → concat → dedup) so reruns climb. Saved to `data/distill/headlines.jsonl` (gitignored).
+- Decision: **Alpha Vantage free tier is enough** — paid (~$50/mo) deferred to the v3 practicum's
+  continuous streams. Key insight: paid removes the rate *limit* but NOT the need to parameterize the
+  adapter (hardcoded one-query/limit-50) → code change required either way; time-windows are the volume lever.
+- Gotcha: must run in the project **`.venv`** (has `adapter_sdk` editable-installed), not conda `base`
+  (`ModuleNotFoundError: adapter_sdk`). Run `python -m pipelines.collect_headlines` from repo root.
+
+**Concepts captured (`docs/m5-distillation-concepts.md`):**
+- Teacher/student + why (cheap bulk model, heterogeneous registry for M8 routing); train on
+  teacher-labels, test on the frozen FPB exam.
+- **SEQ_CLS vs CAUSAL_LM** (student = encoder+classification head, not generative).
+- **Hard vs soft labels** (chose soft = the teacher's distribution = "dark knowledge").
+- **The verbalizer** (the new idea): forward pass → ~150k vocab logits at next position → pick the 3
+  label-token logits → softmax/T → soft distribution. The token-ID subtlety (leading space, first token,
+  must be distinct) is where it usually breaks.
+- **Why not just prompt for the probabilities:** spoken numbers are a *made-up guess*, not the real
+  internal distribution; logits are the truth + cleaner + cheaper + on-distribution for the fine-tune.
+
+**Scope decisions this session (captured, NOT built now):**
+- **v2** (Addendum 4): NER (entity tagging, fits routing) + RAG analyst assistant — after M8.
+- **v3** (Addendum 5, `docs/practicum-vision.md`): **Kellogg Asset-Management Practicum** — Karthik is a
+  Kellogg student; multi-signal asset-intelligence product (stream adapters → per-signal Bull/Bear/Neutral
+  → consolidation per asset → verdict **direction + target price** → dashboard + reports + **analyst LLM
+  Q&A (RAG)**), built ON the platform. Guardrail: target price needs a real backtest (leakage discipline).
+- Principle: core M1–M8 stays mapped to the MLOps JD; product visions are extensions on the engine.
+
+**Next:** Step 2 (teacher soft-labeling, `distill_label.py`, GPU pod) → Step 3 (DistilBERT KL train) →
+Step 4 (eval frozen test) → Step 5 (register) → Step 6 (distill.yml). Steps 2+3 share one pod (~$1–3).
 
 ## Session 5 (2026-06-21) — Piece 3 (Ray data-parallel scaling + NCCL) + training concepts
 
