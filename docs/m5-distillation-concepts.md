@@ -70,6 +70,62 @@ Prompting-for-probabilities is what you do when you only have **API access** (no
 as labeler). We have the model **in memory**, so we take the **real logits** — strictly better.
 (The "just ask for the answer" instinct *is* valid for the simpler **hard-label** fallback.)
 
+## 8. Transfer learning — keep the body, swap the head (the "MISSING/UNEXPECTED" report)
+
+When you load `distilbert-base-uncased` into `...ForSequenceClassification`, HF prints a load
+report. It's the normal **head-swap**, not an error. A model = **body** (understands English,
+reusable) + **head** (one specific job, swappable):
+
+```
+[ embeddings + transformer layers ]   ← BODY: language understanding (matched → kept, not listed)
+[ vocab_* : word-guessing head ]       ← old job's head → not needed → UNEXPECTED (discarded)
+[ pre_classifier + classifier ]        ← new 3-class head → not in checkpoint → MISSING (init + TRAIN)
+```
+- **UNEXPECTED** = *in the download, but we don't need it for our job* → tossed (the LM head).
+- **MISSING** = *our job needs it, but the download lacks it* → created fresh (random) → **trained**.
+
+**Why not train a classifier from scratch instead?** Because a good classifier must first
+**understand English**, and learning that from scratch needs **billions of words + GPU-months**
+(= "pretraining," already done by the DistilBERT/Qwen teams). With only our ~23k examples, a
+from-scratch model couldn't learn English *and* sentiment. So we **reuse the pretrained body**
+(English fluency) and **train only the small head** on our data — cheap, fast, little data needed.
+*Analogy: don't raise a child to sort headlines; hire someone already fluent and train the task in
+an afternoon.* Same trick as the teacher (**Qwen + LoRA**). Transfer learning is the whole game.
+
+## 8b. Why the sklearn baseline was cheap "from scratch" — bag-of-words vs understanding
+
+Apparent contradiction: the **M2 LogReg baseline** trained from scratch, cheaply — so why is
+"learning English expensive"? Because **LogReg never understood English.** TF-IDF + LogReg is a
+**bag of words**: it only counts **which words appear** (ignoring grammar/order/meaning) and learns
+correlations like `"plunge","loss" → bearish`, `"surge","beat" → bullish`. Cheap *because* it's
+shallow — and that's why it **caps at the floor (F1 0.6885)** and gets fooled by "**not** a loss,"
+sarcasm, or novel phrasing.
+
+| Model | How it "reads" text | Pretraining? | Cost | F1 |
+|---|---|---|---|---|
+| TF-IDF + LogReg | **counts words** (bag of words) | none | cheap, from scratch | **0.6885** (floor) |
+| DistilBERT student | **understands context** | reuse pretrained body | cheap fine-tune | ~0.82+ (goal) |
+| Qwen LLM | **deep understanding** | reuse pretrained body | QLoRA | **0.8477** |
+
+*Analogy:* LogReg = someone with a **cheat sheet of word→label** who doesn't speak English; neural
+models = someone who **actually reads** the sentence. You *can* build the cheap shallow model, but to
+beat 0.6885 you need real understanding — the **expensive pretrained part we reuse, not re-learn.**
+The project arc: shallow baseline (0.6885) → reuse understanding to beat it (0.8477) → distill into a
+small-but-still-understanding student (~0.82).
+
+## 9. Reading the training output
+
+- **Load report** (`UNEXPECTED`/`MISSING`) → §8 (the head-swap; expected, not an error).
+- **`eval_loss`** = the **KL divergence on validation** — how far the student's distribution is from
+  the **teacher's soft labels**. **Lower = closer to the teacher.** `load_best_model_at_end` keeps the
+  epoch with the lowest. On the *real* run it should **decrease**; the CPU smoke test used *fake random*
+  probs so its eval_loss was meaningless.
+- **`train_loss`** = same KL averaged over the train set.
+- **`*_runtime` / `*_samples_per_second` / `*_steps_per_second`** = **speed** stats only (not quality).
+- **`Writing model shards`** = saving the checkpoint (per `save_strategy="epoch"`).
+- **The real bar is NOT eval_loss — it's Step 4's test macro-F1** on the frozen exam (vs teacher
+  0.8477, baseline 0.6885). eval_loss = *"did it copy the teacher?"*; test F1 = *"is it actually right?"*
+
 ## 7. The Piece-5 build (6 steps)
 
 | # | Step | File | Runs on | Status |
