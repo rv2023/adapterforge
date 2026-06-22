@@ -25,24 +25,81 @@ def load_teacher():
     Reuse eval_adapter.py's loading (PeftModel.from_pretrained) so it's identical to how
     the teacher was evaluated. Put model in eval() mode.
     """
-    # TODO: return (model, tokenizer)
-    ...
+    from pipelines.eval_adapter import load_model_and_tokenizer
+
+    model, tokenizer = load_model_and_tokenizer()
+    if tokenizer.pad_token_id is None:
+        tokenizer.pad_token = tokenizer.eos_token
+    tokenizer.padding_side = "left"
+    return model, tokenizer
 
 
-def label_token_ids(tokenizer) -> list[int]:
-    """Return the 3 first-token IDs for LABELS, as the model actually EMITS them.
+def label_token_ids(tokenizer) -> tuple[str, list[int]]:
+    """Return the shared emitted prefix plus 3 label-token IDs for LABELS.
 
     THE make-or-break step (docs/m5-distillation-concepts.md §5):
-      - encode each label as it appears after the prompt (usually with a LEADING SPACE,
-        e.g. " bullish") and take the FIRST token id;
+      - ask the chat template how each assistant answer is actually tokenized;
+      - if all labels share an emitted prefix (e.g. newline), score after that prefix;
       - assert all 3 ids are DISTINCT (print them once to eyeball);
       - return them in LABELS order.
     """
-    # TODO
-    ...
+    from pipelines.instruction_format import INSTRUCTION
+
+    messages = [
+        {"role": "system", "content": "You are a financial sentiment classifier."},
+        {"role": "user", "content": INSTRUCTION + "Acme reported stable revenue."},
+    ]
+    prompt_ids = tokenizer.apply_chat_template(
+        messages, add_generation_prompt=True, tokenize=True
+    )
+    continuations = []
+    for label in LABELS:
+        full_ids = tokenizer.apply_chat_template(
+            [*messages, {"role": "assistant", "content": label}],
+            add_generation_prompt=False,
+            tokenize=True,
+        )
+        if full_ids[: len(prompt_ids)] != prompt_ids:
+            raise ValueError("Chat template assistant answer does not share generation prefix")
+        continuation = full_ids[len(prompt_ids) :]
+        if not continuation:
+            raise ValueError(f"No continuation tokens found for label {label!r}")
+        continuations.append(continuation)
+
+    prefix_len = 0
+    while all(len(ids) > prefix_len for ids in continuations):
+        token_id = continuations[0][prefix_len]
+        if any(ids[prefix_len] != token_id for ids in continuations[1:]):
+            break
+        prefix_len += 1
+
+    ids = []
+    for label, continuation in zip(LABELS, continuations):
+        if len(continuation) <= prefix_len:
+            raise ValueError(f"Label {label!r} has no class token after shared prefix")
+        ids.append(continuation[prefix_len])
+
+    if len(set(ids)) != len(ids):
+        details = {
+            label: tokenizer.convert_ids_to_tokens(cont)
+            for label, cont in zip(LABELS, continuations)
+        }
+        raise ValueError(f"Label token ids must be distinct after shared prefix: {details}")
+
+    prefix_ids = continuations[0][:prefix_len]
+    prefix_text = tokenizer.decode(prefix_ids, skip_special_tokens=False)
+    print(
+        "verbalizer="
+        f"prefix={prefix_text!r} "
+        f"label_token_ids={dict(zip(LABELS, ids))} "
+        f"tokens={dict(zip(LABELS, tokenizer.convert_ids_to_tokens(ids)))}"
+    )
+    return prefix_text, ids
 
 
-def soft_label_batch(model, tokenizer, texts: list[str], class_ids: list[int]):
+def soft_label_batch(
+    model, tokenizer, texts: list[str], verbalizer_prefix: str, class_ids: list[int]
+):
     """One forward pass over a batch of headlines -> Nx3 soft-label tensor (on CPU).
 
     Steps:
@@ -56,18 +113,63 @@ def soft_label_batch(model, tokenizer, texts: list[str], class_ids: list[int]):
     NOTE: with left-padding, [:, -1, :] is the real last token for every row; with
     right-padding you'd index each row's true last position instead. Be deliberate.
     """
-    # TODO
-    ...
+    import torch
+
+    from pipelines.instruction_format import INSTRUCTION
+
+    prompts = [
+        tokenizer.apply_chat_template(
+            [
+                {"role": "system", "content": "You are a financial sentiment classifier."},
+                {"role": "user", "content": INSTRUCTION + text},
+            ],
+            add_generation_prompt=True,
+            tokenize=False,
+        )
+        + verbalizer_prefix
+        for text in texts
+    ]
+    inputs = tokenizer(prompts, padding=True, return_tensors="pt").to(model.device)
+
+    with torch.inference_mode():
+        last = model(**inputs).logits[:, -1, :]
+        class_ids_tensor = torch.as_tensor(class_ids, device=last.device)
+        class_logits = last.index_select(dim=-1, index=class_ids_tensor)
+        probs = torch.softmax(class_logits / TEMPERATURE, dim=-1)
+    return probs.float().cpu()
 
 
 def main() -> None:
     """Soft-label every headline in IN (batched) and write {text, probs} to OUT."""
-    # TODO:
-    #   model, tokenizer = load_teacher(); class_ids = label_token_ids(tokenizer)
-    #   read IN (jsonl) -> list of texts
-    #   loop in BATCH_SIZE chunks -> soft_label_batch -> collect rows {"text":t,"probs":[...]}
-    #   write OUT as jsonl; print count
-    ...
+    import json
+    from pathlib import Path
+
+    model, tokenizer = load_teacher()
+    verbalizer_prefix, class_ids = label_token_ids(tokenizer)
+
+    with Path(IN).open(encoding="utf-8") as f:
+        texts = [json.loads(line)["text"] for line in f if line.strip()]
+
+    out = Path(OUT)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    count = 0
+    try:
+        from tqdm.auto import tqdm
+    except ImportError:
+        tqdm = lambda x, **_: x
+
+    total_batches = (len(texts) + BATCH_SIZE - 1) // BATCH_SIZE
+    with out.open("w", encoding="utf-8") as f:
+        for start in tqdm(range(0, len(texts), BATCH_SIZE), total=total_batches):
+            batch_texts = texts[start:start + BATCH_SIZE]
+            batch_probs = soft_label_batch(
+                model, tokenizer, batch_texts, verbalizer_prefix, class_ids
+            ).tolist()
+            for text, probs in zip(batch_texts, batch_probs):
+                f.write(json.dumps({"text": text, "probs": probs}) + "\n")
+            count += len(batch_texts)
+
+    print(f"wrote {count} labeled headlines -> {OUT}")
 
 
 if __name__ == "__main__":

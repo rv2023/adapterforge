@@ -16,9 +16,7 @@ on:
 
 jobs:
   distill:
-    # TODO: for the GPU steps use a self-hosted GPU runner, e.g.
-    #   runs-on: [self-hosted, gpu]
-    runs-on: ubuntu-latest        # placeholder; CPU-only host can't do Steps 2–3
+    runs-on: [self-hosted, gpu]
     env:
       ALPHAVANTAGE_API_KEY: ${{ secrets.ALPHAVANTAGE_API_KEY }}
       MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
@@ -30,11 +28,15 @@ jobs:
       - name: Install deps
         run: |
           pip install -e adapter-sdk
-          pip install -r requirements-gpu.txt   # TODO: requires CUDA torch on a GPU runner
-      # TODO: wire the pipeline steps (each is `python -m pipelines.<module>`):
-      #   1. collect_headlines   (CPU ok; needs ALPHAVANTAGE_API_KEY)
-      #   2. distill_label       (GPU — teacher soft-labels)
-      #   3. distill_train       (GPU — DistilBERT KL train)
-      #   4. eval_student        (CPU ok — frozen-test macro-F1)
-      #   5. register_student    (CPU ok — MLflow registry)
-      # Consider gating registration on the eval F1 clearing the bar (within 2-3 pts of 0.8477).
+          python -c "import torch; assert torch.cuda.is_available(), 'CUDA-enabled torch is required on the self-hosted GPU runner'; print(f'torch={torch.__version__} cuda={torch.version.cuda} gpus={torch.cuda.device_count()}')"
+          pip install -r requirements-gpu.txt
+      - name: Collect headlines
+        run: python -m pipelines.collect_headlines
+      - name: Distill labels
+        run: python -m pipelines.distill_label
+      - name: Train student
+        run: python -m pipelines.distill_train
+      - name: Evaluate student
+        run: python -m pipelines.eval_student
+      - name: Register student
+        run: python -m pipelines.register_student
