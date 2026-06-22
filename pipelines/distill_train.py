@@ -95,6 +95,13 @@ class DistillTrainer(Trainer):
         )
         return (loss, outputs) if return_outputs else loss
 
+    def prediction_step(self, model, inputs, prediction_loss_only, ignore_keys=None):
+        import torch
+
+        with torch.no_grad():
+            loss = self.compute_loss(model, dict(inputs))
+        return loss.detach(), None, None
+
 
 def main() -> None:
     """Train the student with KL distillation and save it to STUDENT_DIR."""
