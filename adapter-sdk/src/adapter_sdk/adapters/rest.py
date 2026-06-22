@@ -35,17 +35,43 @@ class RestAPIAdapter(BaseAdapter):
     schema = schema_v1
     name = "alphavantage_news"
 
+    def __init__(
+        self,
+        topics: str | None = None,
+        tickers: str | None = None,
+        time_from: str | None = None,
+        time_to: str | None = None,
+        limit: int = 50,
+    ) -> None:
+        self.topics = topics
+        self.tickers = tickers
+        self.time_from = time_from
+        self.time_to = time_to
+        self.limit = limit
+
     def read(self) -> pd.DataFrame:
         """Fetch live financial news and normalize it to our (text, label) table."""
+        if not self.topics and not self.tickers:
+            raise ValueError("RestAPIAdapter requires at least one of topics or tickers")
+
         api_key = os.getenv("ALPHAVANTAGE_API_KEY")
+        params = {
+            "function": "NEWS_SENTIMENT",
+            "limit": str(self.limit),
+            "apikey": api_key,
+        }
+        if self.topics:
+            params["topics"] = self.topics
+        if self.tickers:
+            params["tickers"] = self.tickers
+        if self.time_from:
+            params["time_from"] = self.time_from
+        if self.time_to:
+            params["time_to"] = self.time_to
+
         response = requests.get(
             API_URL,
-            params={
-                "function": "NEWS_SENTIMENT",
-                "topics": "financial_markets",
-                "limit": "50",
-                "apikey": api_key,
-            },
+            params=params,
             timeout=30,
         )
         data = response.json()
