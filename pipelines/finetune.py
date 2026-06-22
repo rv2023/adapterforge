@@ -14,10 +14,21 @@ from peft import LoraConfig, prepare_model_for_kbit_training
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 from trl import SFTConfig, SFTTrainer
 
-# --- config (the only things that differ dev vs real) ---
-MODEL_NAME = "Qwen/Qwen2.5-0.5B-Instruct"
-USE_4BIT = False
-MAX_STEPS = 2
+# --- config: dev (laptop CPU smoke) vs real (GPU). Select with AF_MODE=real. ---
+# Closes the long-open tech debt: the real config now lives in git, not ephemeral edits.
+AF_MODE = os.getenv("AF_MODE", "dev")
+if AF_MODE == "real":
+    MODEL_NAME = "Qwen/Qwen2.5-1.5B-Instruct"
+    USE_4BIT = True
+    MAX_STEPS = -1          # -1 -> train by epochs, not a step cap
+    BATCH_SIZE = 16
+    NUM_EPOCHS = 3
+else:
+    MODEL_NAME = "Qwen/Qwen2.5-0.5B-Instruct"
+    USE_4BIT = False
+    MAX_STEPS = 2
+    BATCH_SIZE = 1
+    NUM_EPOCHS = 1
 DATA_DIR = "data/instruction"
 ADAPTER_DIR = "models/fpb-lora"
 
@@ -43,6 +54,7 @@ def build_model_and_tokenizer():
             bnb_4bit_quant_type="nf4",
             bnb_4bit_compute_dtype=torch.bfloat16,
         )
+        model_kwargs["device_map"] = {"": 0}   # load 4-bit straight onto the GPU
     model = AutoModelForCausalLM.from_pretrained(MODEL_NAME, **model_kwargs)
     if USE_4BIT:
         model = prepare_model_for_kbit_training(model)
@@ -72,11 +84,11 @@ def build_trainer(model, tokenizer, lora_config, ds):
     """Ingredients 4 + 5: SFTConfig (knobs) + SFTTrainer (loop)."""
     cfg = SFTConfig(
         output_dir=ADAPTER_DIR,
-        per_device_train_batch_size=1,
+        per_device_train_batch_size=BATCH_SIZE,
         gradient_accumulation_steps=1,
         learning_rate=2e-4,
         max_steps=MAX_STEPS,
-        num_train_epochs=1,
+        num_train_epochs=NUM_EPOCHS,
         logging_steps=1,
         bf16=USE_4BIT,
         report_to="none",
