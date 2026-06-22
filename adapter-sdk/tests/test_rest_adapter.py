@@ -32,7 +32,7 @@ def test_read_normalizes_api_response(monkeypatch):
 
     monkeypatch.setattr("adapter_sdk.adapters.rest.requests.get", fake_get)
 
-    adapter = RestAPIAdapter()
+    adapter = RestAPIAdapter(topics="financial_markets")
     df = adapter.read()
 
     assert list(df.columns) == ["text", "label"]
