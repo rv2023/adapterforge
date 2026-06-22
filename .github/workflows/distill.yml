@@ -1,0 +1,40 @@
+# M5 Piece 5, Step 6 — distillation CI/CD (the JD "distillation pipeline" bullet).
+#
+# Scaffold. Wires the distill pipeline as a workflow. HONEST CAVEAT: GitHub-hosted
+# runners are CPU-only, and Steps 2–3 (teacher 4-bit forward + student train) need a GPU.
+# So the GPU steps require a SELF-HOSTED GPU runner (or this workflow triggers a pod).
+# Steps that are CPU-fine (collect, eval, register) can run on hosted runners.
+#
+# Secrets needed (repo settings): ALPHAVANTAGE_API_KEY, MLFLOW_TRACKING_URI.
+
+name: distill
+
+on:
+  workflow_dispatch: {}          # manual trigger
+  repository_dispatch:           # webhook trigger (mirrors retrain.yml pattern)
+    types: [distill]
+
+jobs:
+  distill:
+    # TODO: for the GPU steps use a self-hosted GPU runner, e.g.
+    #   runs-on: [self-hosted, gpu]
+    runs-on: ubuntu-latest        # placeholder; CPU-only host can't do Steps 2–3
+    env:
+      ALPHAVANTAGE_API_KEY: ${{ secrets.ALPHAVANTAGE_API_KEY }}
+      MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install deps
+        run: |
+          pip install -e adapter-sdk
+          pip install -r requirements-gpu.txt   # TODO: requires CUDA torch on a GPU runner
+      # TODO: wire the pipeline steps (each is `python -m pipelines.<module>`):
+      #   1. collect_headlines   (CPU ok; needs ALPHAVANTAGE_API_KEY)
+      #   2. distill_label       (GPU — teacher soft-labels)
+      #   3. distill_train       (GPU — DistilBERT KL train)
+      #   4. eval_student        (CPU ok — frozen-test macro-F1)
+      #   5. register_student    (CPU ok — MLflow registry)
+      # Consider gating registration on the eval F1 clearing the bar (within 2-3 pts of 0.8477).
