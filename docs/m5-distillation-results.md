@@ -51,5 +51,7 @@ Fixes applied + lessons:
 
 Piece 5 deliverable **met in spirit** (a working, registered, ~20×-cheaper distilled student that
 beats the baseline) — though below the aggressive teacher-gap bar, with a documented cause + path.
-**M5 is complete** (Pieces 1–3, 5; tensor parallelism theory-only). Next: durable model storage
-(DVC/S3), then M6 (vLLM serving).
+
+**DECISION (2026-06-22): ACCEPT 0.7556 and move on** — the domain-shift finding *is* the learning;
+not re-distilling in-domain. **M5 is complete** (Pieces 1–3, 5; tensor parallelism theory-only).
+Durable storage done (teacher + student in DVC/S3). Next milestone: **M6 (vLLM serving)**.
