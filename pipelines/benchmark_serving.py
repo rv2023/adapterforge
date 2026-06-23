@@ -64,15 +64,18 @@ def naive_sender(url: str, prompt: str):
 
 
 def vllm_sender(url: str, model: str, prompt: str):
-    """Build a send() that POSTs to vLLM's OpenAI-compatible completion endpoint.
+    """Build a send() that POSTs to vLLM's OpenAI-compatible chat endpoint.
 
-    Must mirror the naïve path's generation: same prompt text, greedy (temperature=0),
-    small max_tokens (this is classification — a handful of tokens).
+    Must mirror the naïve path's generation: same chat messages, greedy
+    (temperature=0), small max_tokens (this is classification — a handful of tokens).
     """
-    endpoint = f"{url}/v1/completions"
+    endpoint = f"{url}/v1/chat/completions"
     payload = {
         "model": model,
-        "prompt": prompt,
+        "messages": [
+            {"role": "system", "content": "You are a financial sentiment classifier."},
+            {"role": "user", "content": INSTRUCTION_PREFIX + prompt},
+        ],
         "max_tokens": 5,
         "temperature": 0,
     }
@@ -80,7 +83,7 @@ def vllm_sender(url: str, model: str, prompt: str):
     def send():
         response = requests.post(endpoint, json=payload)
         response.raise_for_status()
-        return response.json()["choices"][0]["text"]
+        return response.json()["choices"][0]["message"]["content"]
 
     return send
 
