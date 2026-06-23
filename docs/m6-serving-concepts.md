@@ -426,3 +426,67 @@ Most of M6 (the server, load-test harness, Prometheus config) is written **local
 for free**. GPU runs happen on **RunPod**: a single GPU for the vLLM benchmark, and
 one **A100** session for the MIG lab (~$1.8/hr, a couple hours). Same drill as M5:
 confirm cost, run, tear down.
+
+---
+
+## 10. The benchmark (Piece 1) — concepts
+
+Goal: prove vLLM's serving win with numbers — **same model, two stacks** (naïve
+FastAPI vs vLLM), measured under load. Decisions locked: **RTX 4090 (~$0.40/hr)**,
+**bf16 on both sides**, **standard sweep** (concurrency 1/4/8/16/32).
+
+### 10a. The load-test harness
+
+A load tester does three things: (1) fire many requests **concurrently**, (2) time
+each, (3) aggregate into **percentiles + throughput**. Implementation
+(`pipelines/benchmark_serving.py`): plain threads (`ThreadPoolExecutor` +
+`requests`, no asyncio/new deps). The knob is **concurrency** = how many requests are
+in-flight at once; `max_workers=concurrency` holds it fixed while firing `N_REQUESTS`
+total. Wall-clock is measured around the whole batch (throughput = N / wall).
+Verified locally: 16 requests × 0.1s sleep → c=1 takes ~1.6s, c=8 takes ~0.2s
+(threads genuinely overlap).
+
+- **Percentiles** p50/p95/p99 = typical / bad / worst-case latency. p99 is the tail
+  the SRE cares about. The deliverable is the *contrast*: naïve p99 balloons with
+  concurrency (head-of-line blocking); vLLM's stays flat (continuous batching, §4).
+- **Persist the numbers to a file you pull off the pod** — the pod is ephemeral
+  (same lesson as the M5 teacher). If `main` only prints, the results die with the pod.
+
+### 10b. temperature & greedy decoding (T=0)
+
+When an LLM picks its next token it produces a logit per vocab word, softmaxes to
+probabilities, then chooses. **Temperature** scales logits (`logits / T`) before
+softmax:
+- T=1 normal; T>1 flatter → more random/creative; T<1 sharper → more focused.
+- **T=0** = the limit: always pick the single highest-prob token = **greedy decoding**,
+  zero randomness, deterministic.
+
+(Same knob seen in distillation, where **T=2** *softened* the teacher's labels to
+expose dark knowledge — opposite goal.) The benchmark uses **T=0** because (1) it
+matches the naïve server's `do_sample=False` (= greedy), so both decode identically =
+fair, and (2) classification wants the one best label, reproducibly.
+
+### 10c. Two servers, two APIs — why a separate vllm_sender
+
+Same *model*, different *doorway*. The naïve server is ours; vLLM is a different
+program speaking the OpenAI-compatible protocol:
+
+| | naïve (ours) | vLLM |
+|---|---|---|
+| URL | `/predict` | `/v1/chat/completions` |
+| Request | `{"text": "..."}` | `{"model", "messages":[...], ...}` |
+| Response | `{"label": "..."}` | `{"choices":[{"message":{"content":...}}]}` |
+| Who builds the prompt | the **server** (wraps raw text in system+INSTRUCTION+chat template) | **the client** (vLLM just runs the messages you hand it) |
+
+So `naive_sender` can't reach vLLM — wrong route, wrong body shape, wrong response
+shape, and vLLM won't do the INSTRUCTION-wrapping for you. Hence a separate
+`vllm_sender` → `/v1/chat/completions`.
+
+**Apples-to-apples nuance:** the *text the model sees* must be identical, but *how you
+deliver it differs*. The naïve server builds the full prompt from raw text (so you
+send raw text); for vLLM **you** build the same `[system, user(INSTRUCTION + text)]`
+messages and send those — vLLM then applies Qwen's chat template (the same one
+training used). Sending a bare statement to vLLM (no INSTRUCTION, no chat template) is
+the classic trap: different input to a chat-trained model → garbage, and not a fair
+comparison. Reuse `instruction_format.INSTRUCTION` (don't hand-copy the string — it
+now lazy-imports baseline so importing the constant is cheap).

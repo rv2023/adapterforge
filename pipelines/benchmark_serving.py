@@ -20,13 +20,11 @@ from pathlib import Path
 
 import requests
 
+from pipelines.instruction_format import INSTRUCTION as INSTRUCTION_PREFIX
+
 CONCURRENCY_LEVELS = [1, 4, 8, 16, 32]
 N_REQUESTS = 200            # requests fired per concurrency level
 TEST_FILE = "data/instruction/test.jsonl"
-INSTRUCTION_PREFIX = (
-    "Classify the financial sentiment of the following statement as exactly one "
-    "of bullish, bearish, or neutral.\n\nStatement: "
-)
 
 
 def load_prompts(n: int) -> list[str]:

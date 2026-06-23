@@ -7,8 +7,6 @@ as the 0.6885 baseline. Writes train/val/test as JSONL under data/instruction/.
 from pathlib import Path
 import json
 
-from pipelines.baseline import load_data, split_data  # reuse — same frozen split
-
 OUT_DIR = Path("data/instruction")
 
 INSTRUCTION = (
@@ -48,6 +46,8 @@ def write_jsonl(rows: list[dict], path: Path) -> None:
 
 
 def main() -> None:
+    from pipelines.baseline import load_data, split_data  # reuse — same frozen split
+
     df = load_data()
     splits = zip(("train", "val", "test"), split_data(df))
 

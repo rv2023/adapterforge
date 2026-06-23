@@ -91,5 +91,35 @@ registry then reuse `eval_adapter` / `eval_student` loaders.
 first): vLLM serve the LoRA adapter, load-test harness, p50/p95/p99 + throughput vs
 this naïve FastAPI (same model, two stacks), watch KV-cache VRAM grow with concurrency.
 
+## Session 4 — 2026-06-23 (Piece 1 kickoff — benchmark harness)
+
+**Decisions locked:** RTX 4090 (~$0.40/hr) for the benchmark (A100 only later for the
+MIG lab — only A100/H100 do MIG); **bf16 on both stacks** (isolate the serving engine,
+not precision); **standard sweep** (concurrency 1/4/8/16/32). Build sequence:
+(1) harness [local] → (2) naïve bench server bf16 [local write] → (3) vLLM launch
+[pod] → (4) rent 4090, run both, capture VRAM [pod] → (5) write-up.
+
+**Concepts taught + saved** to `docs/m6-serving-concepts.md` §10: the load-test
+harness (ThreadPoolExecutor, percentiles, persist-numbers-off-the-ephemeral-pod);
+temperature & greedy decoding (T=0 = greedy = matches naïve `do_sample=False`; ties
+back to distillation's T=2 softening); two-servers-two-APIs (naïve `/predict` vs vLLM
+`/v1/chat/completions`) and why a separate `vllm_sender` is required + the
+apples-to-apples prompt-matching trap.
+
+**Harness (`pipelines/benchmark_serving.py`) — IN PROGRESS (Karthik writing):**
+- DONE + verified locally: `summarize` (p50/p95/p99 + req/s), `run_level`
+  (ThreadPoolExecutor concurrency — overlap confirmed: 16×0.1s → c=1 ~1.6s, c=8 ~0.2s),
+  `load_prompts` (reuse frozen test set, strip INSTRUCTION), `naive_sender`, argparse
+  + `make_send` closures (good: default-arg binding avoids late-binding bug). ruff clean.
+- **TODO (open):** (a) `vllm_sender` must switch to `/v1/chat/completions` with the
+  same `[system, user(INSTRUCTION+text)]` messages — current code uses `/v1/completions`
+  with a bare statement (breaks apples-to-apples + chat-trained model). (b) finish
+  `main` — print the table + **persist rows to json/md** (don't lose them with the pod).
+  (c) nit: import `instruction_format.INSTRUCTION` instead of the hand-copied prefix
+  (instruction_format now lazy-imports baseline, so it's cheap).
+
+**Next:** finish harness TODOs → build naïve bench server (bf16) → vLLM launch script →
+confirm 4090 spend + teardown → run.
+
 **Open / deferred:** loop.py model-aware retraining + drift sensor → M8. MPS hands-on
 optional. M1 SDK README + RoCE/IB explainer still open (rule 5).

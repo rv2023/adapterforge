@@ -24,16 +24,24 @@ BASELINE_F1 = 0.6885
 LABELS = ["bullish", "bearish", "neutral"]
 
 
-def load_model_and_tokenizer(adapter_dir: str = ADAPTER_DIR):
-    """Load the 4-bit base, then attach the trained adapter on top."""
+def load_model_and_tokenizer(adapter_dir: str = ADAPTER_DIR, use_4bit: bool = USE_4BIT):
+    """Load the base (4-bit OR bf16), then attach the trained adapter on top.
+
+    use_4bit=True  -> production/eval path (bitsandbytes NF4).
+    use_4bit=False -> the M6 benchmark path: plain bf16 on GPU, so the naïve server
+                      and vLLM are compared at the SAME precision (isolate the engine).
+    """
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
     model_kwargs = {}
-    if USE_4BIT:
+    if use_4bit:
         model_kwargs["quantization_config"] = BitsAndBytesConfig(
             load_in_4bit=True,
             bnb_4bit_quant_type="nf4",
             bnb_4bit_compute_dtype=torch.bfloat16,
         )
+    else:
+        model_kwargs["torch_dtype"] = torch.bfloat16
+        model_kwargs["device_map"] = {"": 0}
     base = AutoModelForCausalLM.from_pretrained(MODEL_NAME, **model_kwargs)
     model = PeftModel.from_pretrained(base, adapter_dir)
     model.eval()
