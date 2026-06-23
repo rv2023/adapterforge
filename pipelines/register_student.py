@@ -52,9 +52,14 @@ def register_student():
         mlflow.log_artifacts(str(student_dir), "student")
         run_id = mlflow.active_run().info.run_id
         source = mlflow.get_artifact_uri("student")
-        mlflow.MlflowClient().create_model_version(
-            name=MODEL_NAME, source=source, run_id=run_id
-        )
+        client = mlflow.MlflowClient()
+        # fpb-student is a NEW registered model name -> create it first (create_model_version
+        # requires it to exist; unlike fpb-sentiment which the baseline already created).
+        try:
+            client.create_registered_model(MODEL_NAME)
+        except mlflow.exceptions.MlflowException:
+            pass  # already exists
+        client.create_model_version(name=MODEL_NAME, source=source, run_id=run_id)
 
     previous_model_name = registry.MODEL_NAME
     try:
