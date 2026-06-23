@@ -16,10 +16,13 @@ ADAPTER_DIR="${ADAPTER_DIR:-models/fpb-lora}"
 PORT="${PORT:-8000}"
 
 # adapter_config.json: r=16 -> vLLM's default --max-lora-rank (16) is exactly enough.
+# --chat-template: transformers >=4.44 no longer ships a default template, and the base
+# tokenizer's template isn't picked up here, so point vLLM at the one the adapter saved.
 vllm serve "$BASE" \
   --enable-lora \
   --lora-modules "fpb=${ADAPTER_DIR}" \
   --dtype bfloat16 \
   --max-lora-rank 16 \
   --gpu-memory-utilization 0.9 \
+  --chat-template "${ADAPTER_DIR}/chat_template.jinja" \
   --port "$PORT"
