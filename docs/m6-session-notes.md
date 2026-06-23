@@ -121,5 +121,41 @@ apples-to-apples prompt-matching trap.
 **Next:** finish harness TODOs → build naïve bench server (bf16) → vLLM launch script →
 confirm 4090 spend + teardown → run.
 
+## Session 5 — 2026-06-23 (Piece 1 RUN — benchmark done on RunPod L4)
+
+GPU: **L4** (4090 was out of capacity; any Ampere+ works, gap is the same). bf16 both
+stacks, sweep 1/4/8/16/32, 200 req/level.
+
+**Env saga (RunPod image was cu130 torch on a CUDA-12.4 driver = broken OOB):**
+- pip pulled torch+cu130 → `cuda.is_available()=False` (driver too old). Fix: pinned
+  **vllm==0.6.6** → torch 2.5.1+**cu124** (matches driver) → cuda True.
+- venv never isolated (image sets `PYTHONPATH` to system dist-packages) + `venv` hung →
+  **abandoned venv, used system Python.**
+- system transformers too new (5.12) → eagerly imported torchaudio (cu130) →
+  `libcudart.so.13`. Fix: `pip install transformers==4.46.3` + `pip uninstall torchaudio`.
+- `numpy 2.5` vs vllm's `<2` → `pip install "numpy<2" "scipy<1.13"`.
+- `HF_HUB_ENABLE_HF_TRANSFER=1` set but pkg missing → `export HF_HUB_ENABLE_HF_TRANSFER=0`.
+- vLLM chat: transformers ≥4.44 ships no default chat template → added
+  `--chat-template models/fpb-lora/chat_template.jinja` (now folded into runpod_vllm.sh).
+
+**RESULTS (L4, results/benchmark_serving_{naive,vllm}.{json,md}):**
+
+| conc | naïve p99 ms | vLLM p99 ms | naïve req/s | vLLM req/s |
+|---|---|---|---|---|
+| 1 | 163 | 115 | 8.0 | 10.6 |
+| 4 | 1222 | 216 | 6.4 | 25.6 |
+| 8 | 1987 | 214 | 5.3 | 48.3 |
+| 16 | 4039 | 268 | 5.2 | 90.3 |
+| 32 | **10667** | **302** | **4.7** | **128.2** |
+
+At c=32: vLLM ~**27× throughput**, ~**35× lower p99**. Shapes: naïve throughput DROPS +
+p99 explodes 65×; vLLM throughput CLIMBS + p99 ~flat. = continuous batching + PagedAttention.
+
+**TODO (Karthik):** peak-VRAM numbers (naïve vs vLLM @ c=32) for the write-up;
+`docs/m6-benchmark-results.md` (his words). Confirm pod terminated.
+
+**Next piece:** Piece 4 (DCGM→Prometheus) or Piece 2 (Triton/KServe + selection note);
+Piece 3 (A100 MIG lab) is the big one.
+
 **Open / deferred:** loop.py model-aware retraining + drift sensor → M8. MPS hands-on
 optional. M1 SDK README + RoCE/IB explainer still open (rule 5).
