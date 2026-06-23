@@ -1,0 +1,6 @@
+outs:
+- md5: a475754a30df9bf558903fc561f6f75d.dir
+  size: 1072860447
+  nfiles: 15
+  hash: md5
+  path: distilbert-student

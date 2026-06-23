@@ -43,8 +43,9 @@ control-plane/audit.jsonl
 serving/predictions.jsonl
 docs/drift_report.html
 
-# Model artifacts (M5) — trained LoRA adapters + training checkpoints (regenerable, large)
-/models/
+# Model artifacts (M5) — big files go to DVC/S3; the small .dvc pointers stay in git.
+/models/*
+!/models/*.dvc
 
 # OS / editor
 .DS_Store

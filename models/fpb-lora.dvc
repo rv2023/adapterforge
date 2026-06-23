@@ -1,0 +1,6 @@
+outs:
+- md5: b8b96bd4d66fbe9e5c7597b1684eaef3.dir
+  size: 48415116
+  nfiles: 8
+  hash: md5
+  path: fpb-lora
