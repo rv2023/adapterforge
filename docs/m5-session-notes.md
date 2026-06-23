@@ -10,9 +10,11 @@ workers +3.92%. GPU work moved to **RunPod (Colab dropped)**. Results: `docs/m5-
 **M5 Piece 3: DONE** — Ray Train data-parallel on 2× A40: **scaling 2.0×** (16.29→32.58 samples/s,
 same ~29.5s runtime) + **nccl-tests busbw ≈ 4.53 GB/s**. Near-2× even on PCIe (tiny LoRA sync), as
 predicted. Results: `docs/m5-distributed-results.md`. Tensor parallelism stays theory-only.
-**M5 Piece 5: IN PROGRESS** — distillation (teacher→DistilBERT). **Step 1 DONE: 23,279 unlabeled
-headlines** collected via Alpha Vantage (`collect_headlines.py`). Concepts: `docs/m5-distillation-concepts.md`.
-Next: Step 2 teacher soft-labeling (GPU pod). Also: NER+RAG=v2, Kellogg practicum=v3 (Addenda 4/5).
+**M5 Piece 5: DONE** — distillation. Student DistilBERT **macro-F1 0.7556** (beats baseline 0.6885;
+~9 pts under teacher 0.8477 → misses the 2-3pt bar; cause = domain shift, distilled on AV news but
+tested on FPB). Registered `fpb-student` (3 heterogeneous models now). Results: `docs/m5-distillation-results.md`.
+**M5 COMPLETE** (Pieces 1-3,5; TP theory-only). Also: NER+RAG=v2, Kellogg practicum=v3 (Addenda 4/5).
+Open: durable model storage (DVC/S3) — the teacher was lost+retrained this session.
 Session 4 (2026-06-21) below covers the number-format deep dive + Piece-2 design + RunPod switch.
 
 ## Session 6 (2026-06-22) — Piece 5 distillation: design + Step 1 (collect headlines) + scope extensions
@@ -51,8 +53,22 @@ Goal: distill the QLoRA teacher into a cheap DistilBERT student. Plus captured b
   Q&A (RAG)**), built ON the platform. Guardrail: target price needs a real backtest (leakage discipline).
 - Principle: core M1–M8 stays mapped to the MLOps JD; product visions are extensions on the engine.
 
-**Next:** Step 2 (teacher soft-labeling, `distill_label.py`, GPU pod) → Step 3 (DistilBERT KL train) →
-Step 4 (eval frozen test) → Step 5 (register) → Step 6 (distill.yml). Steps 2+3 share one pod (~$1–3).
+**Step 2-5 RAN ON RUNPOD A40 (Piece 5 closed).** Student **macro-F1 0.7556** (baseline 0.6885,
+teacher 0.8477) → beats baseline, misses 2-3pt bar; cause = **domain shift** (distilled on AV news,
+tested on FPB). Registered `fpb-student`. Verbalizer validated 20/20 (argmax==generate). Full
+writeup: `docs/m5-distillation-results.md`.
+
+**The teacher-loss saga (the real MLOps lesson this session):** load_teacher crashed — the original
+1.5B teacher DID NOT EXIST (all adapters on laptop + MLflow were 0.5B; Colab teacher was ephemeral,
+laptop copy overwritten by a 0.5B dev run). **Retrained** the 1.5B teacher on the pod
+(`AF_MODE=real python -m pipelines.finetune` — real config now in git via the AF_MODE switch +
+device_map={'':0}). Then the **pod crashed**, wiping the /tmp venv. Recovered. Fixes: AF_MODE switch,
+device_map, robust verbalizer (single-render divergence — cross-render prefix check broke on BPE
+seams), register_student creates the registered model first. **Durability TODO (the fix that
+matters):** models → DVC/S3 (gitignored + ephemeral GPU = how the teacher was lost); venv on
+persistent /workspace; pull models off the pod immediately.
+
+**Next:** durable model storage (DVC/S3 for teacher+student), then **M6** (vLLM serving + LoRA load).
 
 ## Session 5 (2026-06-21) — Piece 3 (Ray data-parallel scaling + NCCL) + training concepts
 
