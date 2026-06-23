@@ -24,7 +24,7 @@ BASELINE_F1 = 0.6885
 LABELS = ["bullish", "bearish", "neutral"]
 
 
-def load_model_and_tokenizer():
+def load_model_and_tokenizer(adapter_dir: str = ADAPTER_DIR):
     """Load the 4-bit base, then attach the trained adapter on top."""
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
     model_kwargs = {}
@@ -35,7 +35,7 @@ def load_model_and_tokenizer():
             bnb_4bit_compute_dtype=torch.bfloat16,
         )
     base = AutoModelForCausalLM.from_pretrained(MODEL_NAME, **model_kwargs)
-    model = PeftModel.from_pretrained(base, ADAPTER_DIR)
+    model = PeftModel.from_pretrained(base, adapter_dir)
     model.eval()
     return model, tokenizer
 

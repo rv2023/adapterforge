@@ -61,5 +61,35 @@ backfill v14/student. Then serving dispatch.
 from `/production`, dict-dispatch to (loader, predictor); download artifacts from
 registry then reuse `eval_adapter` / `eval_student` loaders.
 
+## Session 3 — 2026-06-22 (Piece 0, Step 2 DONE — model-aware serving)
+
+`serving/app.py` is now model-aware:
+- `PREDICTOR_BUILDERS` dict dispatches on `model_kind` → per-kind builder returning a
+  `predict_fn(text) -> (label, confidence)` closure. `lora_adapter` + `distilbert`
+  (sklearn intentionally absent — retired).
+- Builders reuse the eval scripts: `eval_adapter.load_model_and_tokenizer` (now takes
+  `adapter_dir`) + `predict_one` (LLM, prompt reuses `instruction_format.INSTRUCTION`);
+  `eval_student.predict` (student). Artifacts pulled from registry via
+  `download_version_artifacts(name, version)` → `mlflow.artifacts.download_artifacts`.
+- **Decisions:** confidence = `None` for both kinds for now (LLM has no clean prob;
+  distilbert could add softmax later for drift); missing/unknown `model_kind` →
+  `RuntimeError` (fail loud at startup, names the bad kind).
+- **Refactor (testability):** production load moved from module-import time into a
+  FastAPI `lifespan` handler → stashed on `app.state`, endpoint reads
+  `request.app.state`. Module now imports cleanly with no control plane / no GPU.
+- **Bug caught by the smoke test:** `download_version_artifacts` hardcoded
+  `MODEL_NAME` → a version number is ambiguous across registered models (LLM under
+  `fpb-sentiment`, student under `fpb-student`). Fixed by threading `name` through
+  download + both builders + `load_production_model` (passes `MODEL_NAME`; production
+  always lives under fpb-sentiment). Latent in the real flow, but matters for the M8
+  router which loads `fpb-student` by name.
+- **Verified:** `build_distilbert_predictor("fpb-student","2")` on CPU →
+  bullish/bearish/neutral correct. ruff clean. LLM path code-complete, GPU-only (will
+  run for real in Piece 1).
+
+**Next:** Piece 0 done. **Piece 1 — vLLM + benchmark on RunPod** (confirm GPU $/hr
+first): vLLM serve the LoRA adapter, load-test harness, p50/p95/p99 + throughput vs
+this naïve FastAPI (same model, two stacks), watch KV-cache VRAM grow with concurrency.
+
 **Open / deferred:** loop.py model-aware retraining + drift sensor → M8. MPS hands-on
 optional. M1 SDK README + RoCE/IB explainer still open (rule 5).
