@@ -64,7 +64,9 @@ def register_student():
     previous_model_name = registry.MODEL_NAME
     try:
         registry.MODEL_NAME = MODEL_NAME
-        version = registry.register_model_with_dossier(test_df, test_f1, log_and_register)
+        version = registry.register_model_with_dossier(
+            test_df, test_f1, log_and_register, model_kind="distilbert"
+        )
     finally:
         registry.MODEL_NAME = previous_model_name
 

@@ -29,6 +29,7 @@ MODEL_NAME = "fpb-sentiment"
 SCHEMA_VERSION = "v1"   # the Pandera schema the data was validated against
 BEST_C = 10             # the winner we locked in M2
 EXPERIMENT = "m2-baseline"
+MODEL_KINDS = frozenset({"sklearn", "lora_adapter", "distilbert"})
 
 # absolute path so it resolves no matter which dir (script, dagster, loop) calls in
 _DB = Path(__file__).resolve().parent.parent / "mlflow.db"
@@ -55,13 +56,20 @@ def get_git_commit() -> str:
     return result.stdout.strip()
 
 
-def register_model_with_dossier(test_df: pd.DataFrame, test_f1: float, log_and_register) -> str:
+def register_model_with_dossier(
+    test_df: pd.DataFrame, test_f1: float, log_and_register, model_kind: str
+) -> str:
     """Register a NEW version under MODEL_NAME and stamp its dossier. Model-agnostic.
 
     test_f1:          the score, precomputed by the caller (the gate trusts this tag).
     log_and_register: zero-arg callable that logs the artifact AND registers a new
                       version under MODEL_NAME. Sklearn and LLM pass different ones.
+    model_kind:       'sklearn' | 'lora_adapter' | 'distilbert' — tells the serving
+                      plane HOW to load + run this version (serving's dispatch reads it).
     """
+    if model_kind not in MODEL_KINDS:
+        raise ValueError(f"model_kind must be one of {sorted(MODEL_KINDS)}; got {model_kind!r}")
+
     mlflow.set_tracking_uri(f"sqlite:///{_DB}")
     mlflow.set_experiment(EXPERIMENT)
 
@@ -81,6 +89,7 @@ def register_model_with_dossier(test_df: pd.DataFrame, test_f1: float, log_and_r
         client.set_model_version_tag(MODEL_NAME, version, "eval_set_hash", eval_hash)
         client.set_model_version_tag(MODEL_NAME, version, "schema_version", SCHEMA_VERSION)
         client.set_model_version_tag(MODEL_NAME, version, "code_commit", commit)
+        client.set_model_version_tag(MODEL_NAME, version, "model_kind", model_kind)
         mlflow.log_metric("test_f1", test_f1)
 
     return str(version)
@@ -94,6 +103,7 @@ def register_sklearn(model, test_df: pd.DataFrame) -> str:
         lambda: mlflow.sklearn.log_model(
             model, name="model", registered_model_name=MODEL_NAME
         ),
+        model_kind="sklearn",
     )
 
 
@@ -121,7 +131,9 @@ def register_adapter(adapter_dir, test_df: pd.DataFrame) -> str:
             name=MODEL_NAME, source=source, run_id=run_id
         )
 
-    return register_model_with_dossier(test_df, test_f1, log_and_register)
+    return register_model_with_dossier(
+        test_df, test_f1, log_and_register, model_kind="lora_adapter"
+    )
 
 
 def register_baseline() -> None:

@@ -136,7 +136,20 @@ build only after M8 so the core stays mapped to the MLOps-platform JD.)
 
 ## Current state (update this section as we go)
 
-- Active milestone: **M5 IN PROGRESS (Piece 1).** Steps done: (1) instruction-format
+- Active milestone: **M6 IN PROGRESS (Serving + GPU sharing).** Kickoff done
+  (2026-06-22): concepts taught + saved (`docs/m6-serving-concepts.md` — vLLM
+  autoregression/prefill-decode/KV-cache, continuous batching, PagedAttention,
+  time-slicing/MPS/MIG + the two-layer "sharing vs vLLM" model, dispatch-vs-router).
+  Piece order decided: **(0) model-aware serving fix [local, free] → (1) vLLM+benchmark
+  on RunPod → (2) Triton/KServe + selection note → (3) FULL hands-on A100 MIG lab →
+  (4) DCGM→Prometheus**. Design locked for the model-aware fix: stamp a `model_kind`
+  registry tag (`lora_adapter`/`distilbert`; sklearn **retired not deleted**), serving
+  reads it from the control-plane `/production` response and dict-dispatches to the
+  right (loader, predictor). M8 carry-over (two-plane architecture; retraining is
+  sklearn-bound + can't pass the gate vs the LLM; drift sensor piggybacks on TF-IDF)
+  written into `docs/PROJECT_PLAN.md` M8 section. Progress log: `docs/m6-session-notes.md`.
+  **M5 COMPLETE** (see memory/m5-progress.md). Historical M5 detail below:
+- (M5 history) Steps done: (1) instruction-format
   (`pipelines/instruction_format.py` → `data/instruction/{train,val,test}.jsonl`, chat-messages
   format, reuses M2 `split_data` so test set is bitwise-identical to the 0.6885 frozen set);
   (2) QLoRA training script (`pipelines/finetune.py`, TRL `SFTTrainer` + PEFT, dev/real switch via

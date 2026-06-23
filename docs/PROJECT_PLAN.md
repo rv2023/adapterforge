@@ -231,6 +231,49 @@ Lenovo interview points at a folder in this repo.
 *JD lines: multi-adapter serving with dynamic routing; heterogeneous models;
 hardware-aware inference; K8s operators/CRDs; fully automated pipelines.*
 
+### M8 carry-over context (decided during M6 kickoff, 2026-06-22)
+
+**The two-plane architecture (the M8 target shape).** The platform has two
+independent pipelines that meet at exactly one handoff — the registry + promotion
+gate (the control plane):
+
+```
+SERVING plane  (always on)          RETRAINING plane  (event-driven)
+  prod traffic → prod model            drift detected → retrain → gate → promote
+  ← model-aware dispatch (M6)          ← loop.py / M4 automation, made model-aware (M8)
+```
+
+The serving plane must not know how models are made; the retraining plane must not
+know how they're served. They couple only through the registry version + the gate.
+M6 builds the **serving** half (model-aware dispatch). M8 builds the **retraining**
+half end-to-end (drift → retrain → promote → reroute, zero failed requests).
+
+**Debts M6 deliberately leaves for M8 (do NOT fix earlier):**
+
+1. **Retraining is sklearn-bound and effectively dead.** `pipelines/loop.py`
+   `retrain_and_register()` retrains a **sklearn LogReg** (~0.6885). Production is now
+   the **LLM (0.8477)**, and promotion gate #1 requires *candidate F1 > production F1
+   + margin* — so a retrained sklearn candidate is **rejected every time**. The
+   self-healing loop cannot promote anything past the LLM until "retrain" means
+   **retrain the LLM (QLoRA)**, not sklearn. M8 must make the retraining plane
+   model-aware (retrain whatever kind production is; GPU-bound).
+
+2. **The drift *sensor* piggybacks on sklearn.** `loop.py` `drift_detected()` reads
+   the sklearn TF-IDF vocabulary (`model.named_steps["tfidf"]`) as its OOV detector.
+   When sklearn is fully retired, the drift sensor needs replacing (text-stats /
+   embedding-based), independent of any served model.
+
+3. **sklearn is retired, NOT deleted.** The LogReg version stays registered in MLflow
+   and its artifacts stay in DVC/registry (kept for lineage/history). M6 simply does
+   not build a serving path for it. The live model kinds going forward are
+   `lora_adapter` (LLM, current prod) and `distilbert` (student, M8 router cheap path
+   + MIG lab second tenant).
+
+**M6's model-aware groundwork that M8 reuses:** the `model_kind` registry tag
+(`sklearn` / `lora_adapter` / `distilbert`) and the serving dispatch keyed on it are
+the same primitives the M8 **cost-aware router** needs (route by kind: classification
+→ cheap student slice, generation → LLM slice). See `docs/m6-serving-concepts.md`.
+
 ---
 
 ## JD Coverage Matrix
