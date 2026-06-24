@@ -48,11 +48,9 @@ explodes ~65×** (163→10,667 ms); vLLM **throughput climbs** (10.6→128.2) an
 roughly flat** (115→302 ms).
 
 ## Peak GPU memory (KV-cache observation)
-<!-- TODO(Karthik): from `nvidia-smi` at concurrency 32 — peak VRAM for each stack.
-     If not captured during the run, say so explicitly. -->
-- Naïve, peak VRAM @ c=32: _____ GB
-- vLLM, peak VRAM @ c=32: _____ GB
-- (1 line on what you observed — e.g. did vLLM's KV-cache VRAM grow with concurrency?)
+**Not captured** during this run (we focused on latency/throughput). Proper GPU-memory
+observability — including watching KV-cache VRAM grow with concurrency — lands in
+**M6 Piece 4 (DCGM → Prometheus)**.
 
 ## Why vLLM wins
 <!-- TODO(Karthik): YOUR words (rule 5). One short paragraph. Hit: prefill vs decode,

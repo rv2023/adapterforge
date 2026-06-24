@@ -1,0 +1,37 @@
+# Triton model config for the DistilBERT student (ONNX backend).
+# Triton reads this to know how to load + serve 1/model.onnx.
+
+name: "distilbert-student"        # must match the folder name
+backend: "onnxruntime"            # run the .onnx via ONNX Runtime
+max_batch_size: 16                # >0 => first tensor dim is the (implicit) batch dim
+
+# Input tensors — names MUST match the ONNX export's input_names.
+# dims exclude the batch dim (it's implicit because max_batch_size > 0).
+# -1 = variable sequence length.
+input [
+  {
+    name: "input_ids"
+    data_type: TYPE_INT64
+    dims: [ -1 ]
+  },
+  {
+    name: "attention_mask"
+    data_type: TYPE_INT64
+    dims: [ -1 ]
+  }
+]
+
+# Output: the 3 class logits (bullish/bearish/neutral by index). Client does argmax.
+output [
+  {
+    name: "logits"
+    data_type: TYPE_FP32
+    dims: [ 3 ]
+  }
+]
+
+# Triton's request-boundary batching (the non-LLM cousin of vLLM continuous batching).
+dynamic_batching { }
+
+# Local run is CPU-only.
+instance_group [ { kind: KIND_CPU } ]

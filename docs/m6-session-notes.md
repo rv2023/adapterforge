@@ -157,5 +157,54 @@ p99 explodes 65×; vLLM throughput CLIMBS + p99 ~flat. = continuous batching + P
 **Next piece:** Piece 4 (DCGM→Prometheus) or Piece 2 (Triton/KServe + selection note);
 Piece 3 (A100 MIG lab) is the big one.
 
+## Session 6 — 2026-06-23 (Piece 2 kickoff — Triton/ONNX concepts)
+
+VRAM for Piece 1 marked **not captured** in `m6-benchmark-results.md` (deferred to
+Piece 4 DCGM). "Why vLLM wins" paragraph still Karthik's TODO.
+
+**Concepts taught + saved** (`docs/m6-serving-concepts.md` §11): Triton = generalist
+serving server (any framework) vs vLLM the LLM specialist; Triton **dynamic batching**
+(request-boundary) vs vLLM **continuous batching** (per-token). **ONNX** = portable
+framework-agnostic model file (graph + weights; PDF/bytecode/Docker-image analogy;
+export via torch.onnx/optimum → ONNX Runtime → Triton ONNX backend; verify output
+matches PyTorch). **Why ONNX fits the student but NOT the LLM:** static graph (one
+forward) vs autoregressive loop + stateful growing KV-cache + dynamic shapes → LLMs
+need vLLM or TensorRT-LLM-in-Triton instead. Right-tool-per-model-type table →
+foreshadows M8 cost-aware router.
+
+**Piece 2 plan (decided):** tool = **Triton** (KServe = M8); model = **DistilBERT
+student**; backend = **ONNX (decision A)**; where = **local Docker CPU**
+(`nvcr.io/nvidia/tritonserver`), **$0**. Deliverables: student served through Triton +
+one inference request; half-page selection note (vLLM/Triton/KServe/TGI/TorchServe/
+DeepSpeed), Karthik's words.
+
+**Next:** teach Triton model-repository layout → ONNX-export skeleton + config.pbtxt →
+run Triton in Docker → inference request → selection note.
+
+## Session 7 — 2026-06-23/24 (Piece 2 BUILD — student served through Triton)
+
+**DONE — DistilBERT student served through Triton (local Docker, CPU, $0):**
+- `pipelines/export_student_onnx.py` — PyTorch student → ONNX (LogitsOnly wrapper for
+  tensor-in/out; dynamic batch+seq; verify allclose vs PyTorch). Export blob
+  (`model.onnx` + `model.onnx.data`, 256 MB) gitignored.
+- `serving/triton/model_repository/distilbert-student/{config.pbtxt,1/model.onnx}` —
+  onnxruntime backend, dynamic_batching, KIND_CPU.
+- `serving/triton/triton_client.py` — tokenizes client-side, KServe v2 infer request,
+  argmax→label. **Verified:** "record profits"→bullish, "shares plunged"→bearish;
+  logits match the PyTorch export bit-for-bit. Triton `distilbert-student | 1 | READY`.
+
+**Three ONNX-export gotchas hit + solved (now in concepts §11e):**
+1. dynamo exporter ignores `dynamic_axes` → `dynamo=False` (classic).
+2. 1-row dummy freezes OUTPUT batch dim to [1,3] → trace with a 2-row dummy → [-1,3]
+   (Triton needs -1 for batching; max_batch_size>0 is a promise the model takes batches).
+3. SDPA attention doesn't trace cleanly (graph diverges, allclose fails) →
+   `attn_implementation="eager"`. (Verify caught a real wrong graph — fixed export, did
+   NOT loosen atol.)
+
+**TODO (Karthik, rule 5):** the half-page selection note (vLLM vs Triton vs KServe vs
+TGI/TorchServe/DeepSpeed — when to pick each). Then Piece 2 closed.
+
+**Next pieces:** Piece 4 (DCGM→Prometheus), Piece 3 (A100 MIG lab — the big one).
+
 **Open / deferred:** loop.py model-aware retraining + drift sensor → M8. MPS hands-on
 optional. M1 SDK README + RoCE/IB explainer still open (rule 5).

@@ -490,3 +490,125 @@ training used). Sending a bare statement to vLLM (no INSTRUCTION, no chat templa
 the classic trap: different input to a chat-trained model → garbage, and not a fair
 comparison. Reuse `instruction_format.INSTRUCTION` (don't hand-copy the string — it
 now lazy-imports baseline so importing the constant is cheap).
+
+---
+
+## 11. Triton + ONNX (Piece 2) — concepts
+
+### 11a. Triton = the generalist serving server
+
+vLLM is a *specialist* (LLMs only). **Triton Inference Server** (NVIDIA) is the
+*generalist*: it serves **any** model (ONNX, PyTorch, TensorRT, TensorFlow, plain
+Python) behind one standard HTTP/gRPC API. Reach for it when you have a **fleet of
+mixed models** and want one uniform serving layer with versioning, metrics, and
+**dynamic batching**.
+
+Parallel to remember: Triton's **dynamic batching** (group requests that arrive close
+in time into one batch) is the non-LLM cousin of vLLM's **continuous batching** — same
+goal (keep the GPU full), simpler mechanism. Triton batches at the **request boundary**;
+vLLM re-batches **every token** because LLMs are autoregressive (§4).
+
+Piece 2 is a **breadth** deliverable: serve ONE model through Triton (so you've touched
+the JD tool) + write the "when would I pick each" selection note. KServe is left for M8
+(don't double up).
+
+### 11b. ONNX = a portable, framework-agnostic model file
+
+**ONNX** (Open Neural Network Exchange) saves a trained network — its **computation
+graph** (nodes = math ops, edges = tensors) **+ trained weights** — in one neutral file
+(`model.onnx`). It exists so serving can be **framework-agnostic**: *export once, run
+anywhere*, on an optimized runtime, no original framework needed.
+
+Analogies: **PDF** (any reader opens it), **compiled bytecode** (model "compiled" from
+PyTorch to a neutral form), a **Docker image** (portable artifact).
+
+Pipeline: PyTorch model → `torch.onnx.export` / HF `optimum` → `model.onnx` → an **ONNX
+Runtime** executes it. **Triton has a built-in ONNX backend**, so you drop the `.onnx`
++ a `config.pbtxt` into Triton's model folder and it serves it — Triton never needs to
+know PyTorch existed.
+
+Caveat: ONNX export can be finicky for models with control flow / custom ops, so
+**verify the ONNX output matches the original PyTorch output** after export. For a
+standard DistilBERT classifier the export is clean.
+
+**Export gotcha — the `LogitsOnly` wrapper** (`pipelines/export_student_onnx.py`):
+`torch.onnx.export` traces forward and expects **tensors in, tensors out**, with names
+that match `config.pbtxt`. But a HF model takes many kwargs and returns a
+**`SequenceClassifierOutput` object** (`.logits`, `.loss`, …), not a bare tensor. So we
+wrap it in a tiny `nn.Module` whose `forward(input_ids, attention_mask)` returns exactly
+`.logits`. That gives the graph (a) **one output named `logits`** and (b) **two inputs
+named `input_ids`/`attention_mask`** — matching the config exactly, instead of HF's
+object-returning, many-kwargs interface that the exporter + Triton would choke on.
+(Alternatives: `return_dict=False` → a tuple, or `optimum` automates the whole export;
+the wrapper is the explicit, shows-what's-happening version.)
+
+### 11c. Why ONNX fits the student but NOT the LLM
+
+ONNX captures a **static graph — one forward pass, fixed shapes**. Perfect for the
+**DistilBERT student** (text → one forward → logits). But an **LLM is autoregressive**
+(§3): it generates one token at a time in a **loop**, growing a **KV-cache** each step.
+That doesn't fit a static graph because:
+
+1. **The generation loop is control flow**, not one forward pass — plain ONNX captures
+   only a single step; you'd have to drive the loop + cache yourself, losing the serving
+   smarts.
+2. **The KV-cache is stateful** and grows every step; a static graph can't manage it
+   (managing it dynamically is exactly what vLLM's PagedAttention does, §5).
+3. **Shapes are dynamic** (sequence grows; batching is per-token/continuous, not
+   request-boundary) — mismatched with ONNX + Triton's request-boundary batching.
+
+So LLMs get a different "compiled" path: **vLLM** (Piece 1), or **TensorRT-LLM** (NVIDIA's
+compiled decoder-transformer engine, "ONNX-but-for-LLMs") served via **Triton's
+TensorRT-LLM backend** — heavier, specialized.
+
+### The right-tool-per-model-type table (→ selection note + M8 router)
+
+| Model type | Serving path |
+|---|---|
+| Encoder / classifier / embedding / vision (DistilBERT student) | **ONNX → Triton** ✅ static graph + dynamic batching |
+| Decoder LLM (Qwen + LoRA) | **vLLM** (or TensorRT-LLM in Triton) — *not* plain ONNX |
+
+This foreshadows **M8's cost-aware router**: classification traffic → student on
+Triton/ONNX (cheap); generation traffic → LLM on vLLM (expensive). Two model types, two
+serving stacks, one router.
+
+### 11e. Triton dynamic batching needs a dynamic batch dim (two export gotchas)
+
+Triton's **dynamic batching** stacks several requests into one tensor (`[5, seq]`) and
+runs the model once. So `config.pbtxt`'s `max_batch_size: 16` is a *promise* the model
+can take a **variable** batch. At load time Triton checks the ONNX's declared shapes:
+the batch axis (dim 0) must be **`-1`** (any size). If the export baked a concrete `1`
+(e.g. `logits: [1,3]`), Triton refuses to load — *"first dimension must be -1."*
+`-1` / a named axis = "decided at runtime"; a literal `1` = "only ever 1 row."
+
+Getting `[-1, 3]` out of `torch.onnx.export` took clearing **two** gotchas:
+
+1. **The dynamo exporter ignores `dynamic_axes`.** Newer `torch.onnx.export` defaults to
+   the dynamo path, which uses a different `dynamic_shapes` API and silently drops
+   `dynamic_axes` → bakes the dummy's `batch=1` everywhere. Fix: **`dynamo=False`**
+   (classic TorchScript exporter, which honors `dynamic_axes`).
+2. **A 1-row dummy freezes the OUTPUT batch dim.** Even with the classic exporter,
+   `dynamic_axes` is applied to **inputs** by name, but the **output** shape is *inferred
+   from the traced computation*. Tracing with a 1-row dummy makes the exporter
+   constant-fold `logits` to `[1,3]`. Fix: **trace with a 2-row dummy** (`padding=True`)
+   so the batch axis stays symbolic → `logits: [-1, 3]`.
+3. **SDPA attention doesn't trace cleanly → the graph diverges.** transformers' default
+   **SDPA** attention kernel constant-folds parts of the mask under the classic exporter
+   (the `TracerWarning`s about `attention_mask.shape`/`is_causal` "treated as a constant"),
+   so the ONNX output differs from PyTorch and the `allclose` verify fails. Fix: export
+   with **`attn_implementation="eager"`** — numerically identical, traces correctly.
+   *Lesson: the verify caught a genuinely wrong graph — fix the export, never loosen the
+   `atol` to make it pass.*
+
+Verify after export: ONNX `logits` dim reads `['batch', 3]` (not `[1,3]`) **and**
+`allclose` vs PyTorch passes on a batch size *different* from the export dummy (proves
+it generalizes).
+
+### 11d. Piece 2 plan
+
+- **Tool:** Triton (KServe = M8). **Model:** DistilBERT student. **Backend:** ONNX
+  (decision A — the genuine Triton experience + dynamic-batching parallel).
+- **Where:** local Docker, CPU (`nvcr.io/nvidia/tritonserver`) — **$0, no RunPod.**
+- **Deliverables:** (1) student served through Triton + a successful inference request;
+  (2) the half-page selection note (vLLM vs Triton vs KServe vs TGI/TorchServe/DeepSpeed),
+  Karthik's words.
