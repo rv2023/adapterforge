@@ -1,0 +1,6 @@
+# ResourceFlavor — describes a class of resource and (optionally) which nodes it maps to
+# (via nodeLabels). Empty = matches ANY node, which is fine for this CPU-quota demo.
+apiVersion: kueue.x-k8s.io/v1beta1
+kind: ResourceFlavor
+metadata:
+  name: default-flavor

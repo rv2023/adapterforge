@@ -1,0 +1,62 @@
+# Demo workloads for the Kueue M7 deliverable:
+#   - 3 single-pod jobs  -> watch 2 admit + the 3rd QUEUE (quota gating)
+#   - 1 two-pod "gang" job -> watch all-or-nothing admission (gang scheduling)
+#
+# THE KEY WIRING on every job: the label  kueue.x-k8s.io/queue-name: cpu-local
+# That label is what hands the job to Kueue. Kueue's webhook then suspends it until admitted.
+# (Setting suspend: true explicitly is also recommended.)
+#
+# Apply:   kubectl apply -f k8s/m7-kueue/demo-jobs.yaml
+# Watch:   kubectl get workloads -n default        (Kueue's view: ADMITTED vs pending)
+#          kubectl get jobs,pods -n default
+#          kubectl describe clusterqueue cpu-queue (see admitted/usage vs quota)
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: sleeper-1
+  namespace: default
+  labels:
+    kueue.x-k8s.io/queue-name: cpu-local # <- TODO: this label is REQUIRED on each job
+spec:
+  parallelism: 1
+  completions: 1
+  suspend: true # Kueue unsuspends on admission
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: sleep
+          image: busybox
+          command: ["sh", "-c", "sleep 120"]
+          resources:
+            requests:
+              cpu: "400m" # e.g. 400m — sized vs the ClusterQueue quota to force queueing
+              memory: "128Mi"
+# TODO: duplicate the above into sleeper-2 and sleeper-3 (same spec, different names) so
+#       you submit 3 jobs at once and watch the 3rd queue.
+---
+# Gang job: 2 pods that must be admitted TOGETHER (all-or-nothing). With the quota nearly
+# full, this won't admit until enough frees for BOTH pods at once.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: gang-job
+  namespace: default
+  labels:
+    kueue.x-k8s.io/queue-name: cpu-local
+spec:
+  parallelism: 2 # 2 pods
+  completions: 2
+  suspend: true
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: sleep
+          image: busybox
+          command: ["sh", "-c", "sleep 120"]
+          resources:
+            requests:
+              cpu: "400m" # same per-pod request; 2x of this must fit the quota at once
+              memory: "128Mi"

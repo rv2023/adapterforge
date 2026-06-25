@@ -1,0 +1,17 @@
+# ClusterQueue — the quota pool. SIZE THE QUOTA SMALL on purpose so that submitting 3
+# jobs forces the 3rd to QUEUE (the whole point of the demo).
+apiVersion: kueue.x-k8s.io/v1beta1
+kind: ClusterQueue
+metadata:
+  name: cpu-queue
+spec:
+  namespaceSelector: {} # any namespace may use this queue
+  resourceGroups:
+    - coveredResources: ["cpu", "memory"]
+      flavors:
+        - name: default-flavor
+          resources:
+            - name: cpu
+              nominalQuota: "800m"
+            - name: memory
+              nominalQuota: "1Gi"

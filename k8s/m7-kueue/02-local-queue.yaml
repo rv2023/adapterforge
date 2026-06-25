@@ -1,0 +1,9 @@
+# LocalQueue — the namespace-scoped handle users submit Jobs to; points at the ClusterQueue.
+# Jobs reference THIS (by the label kueue.x-k8s.io/queue-name: cpu-local).
+apiVersion: kueue.x-k8s.io/v1beta1
+kind: LocalQueue
+metadata:
+  name: cpu-local
+  namespace: default
+spec:
+  clusterQueue: cpu-queue
