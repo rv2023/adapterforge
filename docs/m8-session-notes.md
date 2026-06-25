@@ -59,3 +59,21 @@ same input/different correct label, needs delayed-label accuracy — named, not 
 design-heavy: `loop.retrain_and_register()` must produce an **LLM adapter** (dispatch the
 GPU QLoRA pipeline keyed on model_kind) instead of inline sklearn. Then 2nd adapter (GPU),
 hot-swap/KServe.
+
+## Session 3 — 2026-06-25 (Debt 1: model-aware retraining DONE)
+
+`loop.py` is now model-aware (dispatch verified via mocks; ruff clean):
+- `production_model_kind()` reads `model_kind` from control-plane `/production`.
+- `RETRAIN_BY_KIND = {sklearn: retrain_sklearn, lora_adapter: retrain_lora}`;
+  `retrain_and_register()` dispatches by production kind (RuntimeError on unknown).
+- `retrain_lora()` chains the M5 pipeline: instruction_format → **set AF_MODE=real BEFORE
+  importing finetune** (finetune reads it at module load) → finetune → eval_adapter →
+  `register_adapter("models/fpb-lora", test_df)`. GPU-bound → runs on a GPU runner
+  (prod: retrain.yml); wiring done, real run deferred.
+- `retrain_sklearn()` kept as legacy (never wins the gate vs the LLM).
+- run_loop() unchanged. **Debt 1 architecture complete**; the loop is no longer a dead
+  sklearn no-op.
+
+**M8 remaining:** detect_drift_evidently swap (1 line, closes Debt 2) · 2nd LoRA adapter
+(summarization, ECTSum — GPU) · hot-swap + KServe (cluster/GPU) · CRD/operator stretch ·
+polish (arch diagram, README JD-map, demo).
