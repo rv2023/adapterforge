@@ -227,3 +227,59 @@ For a pod to *use* a GPU on K8s, the node needs, bottom to top:
 GPU node `ami_type = AL2023_x86_64_NVIDIA` (driver+runtime prebaked) + GPU Operator
 `--set driver.enabled=false` (device-plugin + DCGM + MIG-manager + NFD). Reliable +
 representative + covers Pieces 3 & 4.
+
+---
+
+## 8. ResourceFlavor & LocalQueue (the two Kueue objects that confuse)
+
+**ResourceFlavor — "which *kind* of resource."** Distinguishes varieties of the same
+resource ("1 GPU" — A100 or A10G? spot or on-demand? x86 or arm?). Quota is defined
+**per-flavor**, and the flavor **maps to nodes** via `nodeLabels` (Kueue adds a
+`nodeSelector` on admission so pods land on the right nodes). Empty `nodeLabels` = matches
+any node (our CPU demo's `default-flavor`). Analogy: a **SKU** of a resource — the
+ClusterQueue budgets "$ per SKU," the flavor says which shelf (nodes) it's on.
+
+**LocalQueue — the namespaced submission handle.** A namespace-scoped pointer to a
+ClusterQueue; users submit Jobs to it via the label `kueue.x-k8s.io/queue-name`. The
+indirection exists for **multi-tenancy + RBAC**: ClusterQueue is **cluster-scoped /
+admin-owned** (the quota pool); LocalQueue is **namespaced / team-owned** (teams interact
+only in their namespace but draw from the shared pool). Analogy: **ClusterQueue = the
+shared bank vault** (the real quota); **LocalQueue = your team's branch account** that
+draws from it.
+
+The full chain:
+```
+Job (label queue-name) → LocalQueue (namespaced, who submits) → ClusterQueue (shared quota)
+                                                                   → ResourceFlavor (which kind + which nodes)
+```
+
+---
+
+## 9. RCA bot — automated root-cause analysis (Piece, deferred to a later session)
+
+The platform's automated first-responder: on failure, **gather evidence → classify cause
+→ report**, fast (JD: time-to-classified-cause **<10 min**). Observability (Piece 4) says
+*something's wrong*; the RCA bot says *what's wrong and why*.
+
+**Flow:** Prometheus alert → Alertmanager → webhook → bot → **COLLECT** (K8s pod
+status/exit-code + events + logs; Prometheus/DCGM metrics around failure; last MLflow run)
+→ **CLASSIFY** (signatures → cause) → **REPORT** (structured {cause, evidence, fix,
+elapsed} → stdout/file, Slack optional).
+
+**Cause taxonomy (signatures):**
+| Cause | Signature |
+|---|---|
+| `oom` | container `lastState.terminated.reason==OOMKilled` / exit 137; DCGM VRAM ≈ max |
+| `data_validation` | log regex: Pandera/`SchemaError`/"validation failed" |
+| `nccl_timeout` | log regex: `NCCL` + `timeout`/`Watchdog` |
+| `node_pressure` | events: `MemoryPressure`/`NodeNotReady`/`Evicted` |
+| `unknown` | fallback (don't force a wrong label) |
+
+**Design (decided, build deferred):** module layout `observability/rca/` —
+`collector.py` (k8s/prometheus/mlflow), `classifier.py` (rule-based core; LLM-assist
+optional), `report.py`, `app.py` (thin FastAPI `/alert` webhook), `cli.py` (run on a
+`--namespace/--pod` for local testing). Build **CLI/library first** (testable against a
+real failed pod via kubeconfig), then wrap in FastAPI for the Alertmanager demo. Mirrors
+the serving design (logic + thin web wrapper). **Tutor-protected component → Karthik
+writes the logic.** Tested via **3 injected failures** (OOM, data-validation [reuse M1
+`corrupt.py`], NCCL timeout) measuring <10 min. **No GPU needed.**

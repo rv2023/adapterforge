@@ -139,10 +139,19 @@ build only after M8 so the core stays mapped to the MLOps-platform JD.)
 - Active milestone: **M7 IN PROGRESS (K8s GPU Platform).** Kickoff 2026-06-25:
   K8s=solid→assume it; free-first (kind) strategy. **Terraform EKS+GPU module authored
   (`infra/`)** — community modules, system + GPU node groups, GPU **desired=0** cost lever,
-  base AMI (Operator installs drivers), single NAT, EKS 1.31, IRSA; `validate` clean; plan
-  = 61 add/0/0. **Applying now** (Option A; ~$0.20/hr base, +$1/hr per GPU; teardown
-  `cd infra && terraform destroy`). Carries in M6 MIG(P3)+DCGM(P4). Concepts:
-  `docs/m7-concepts.md` (Kueue deep, Kueue-vs-KEDA, NCCL, namespaces, KServe). Log:
+  prebaked-driver GPU AMI (`AL2023_x86_64_NVIDIA`) + Operator `driver.enabled=false`
+  (revised from base-AMI — Operator can't build drivers on Amazon Linux; see concepts §7),
+  single NAT, EKS 1.31, IRSA. **DONE this milestone so far:** cluster applied; GPU node
+  scaled via `aws eks update-nodegroup-config` (module ignore_changes on desired_size);
+  GPU Operator provisioned (device-plugin/DCGM/MIG-mgr; **DCGM→Prometheus = Piece 4 ✅**);
+  **Kueue ✅** (quota+gang demoed, `k8s/m7-kueue/`). Addons codified in **separate**
+  `infra/addons/` module (own state; helm/k8s providers via exec → avoids cluster+chart
+  same-state chicken-egg): gpu-operator, kube-prometheus-stack (ephemeral), kueue.
+  **DEFERRED:** in-place resize + **RCA bot** (designed, concepts §9) + SLO dashboard =
+  non-GPU → do free on **kind** next; **MIG (P3)** needs A100/H100 (g5/A10G can't MIG;
+  AWS A100 $$+quota) → separate session if ever; time-slicing needs a GPU session.
+  **Cost:** ~$0.20/hr base + ~$1/hr per GPU; `terraform destroy` addons then infra between
+  sessions (code in git, re-apply ~15 min). Concepts: `docs/m7-concepts.md`. Log:
   `docs/m7-session-notes.md`. **M6 COMPLETE** (P0-2 done; P3/P4 → M7; write-ups drafted).
   Historical M6 detail:
 - (M6) Active milestone was **M6 (Serving + GPU sharing).** Kickoff done

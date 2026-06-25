@@ -63,6 +63,43 @@ deferred to M8 (external serving exposure); M7 uses `kubectl port-forward`.
 **Remaining M7 (all non-GPU → do with GPU=0 or on kind):** Kueue (quota+gang), in-place
 resize (<1 min), RCA bot (<10 min), >98% SLO dashboard.
 
+## Session 2 — 2026-06-25 (Kueue DONE; RCA designed+deferred; teardown)
+
+- **Kueue DONE** (`k8s/m7-kueue/` + `infra/addons/kueue.tf`, v0.18.1): ResourceFlavor
+  (`default-flavor`, any node) + ClusterQueue (`cpu-queue`, cpu **800m** quota) + LocalQueue
+  (`cpu-local`) + demo jobs. **Demonstrated on EKS:** gang-job ADMITTED all-or-nothing
+  (2×400m=800m, both pods together), sleeper queued (Suspended, no pods — no quota left);
+  `kubectl get workloads` + `describe clusterqueue` showed usage=quota, Pending=1. Gang
+  scheduling + quota gating both proven. (CRDs serve v1beta2; manifests say v1beta1, auto-
+  converted — fine.) Note: gang grabbed full quota first (BestEffortFIFO); for the clean
+  "3 jobs → 2 admit/1 queue" shot, run the 3 sleepers without the gang.
+- Gotcha logged earlier: EKS module **ignore_changes on desired_size** → scale GPU via
+  `aws eks update-nodegroup-config` (out-of-band), not the tfvar.
+- **RCA bot — DESIGNED, build deferred** (concepts §9): collect (k8s/prometheus/mlflow)
+  → classify (rule-based signatures: oom/data_validation/nccl_timeout/node_pressure) →
+  report; `observability/rca/` (collector/classifier/report/app/cli); CLI-first then
+  FastAPI webhook; tutor-protected (Karthik writes logic); 3 injected failures, <10 min.
+
+**M7 status:**
+| Piece | Status |
+|---|---|
+| Terraform EKS + GPU node group | ✅ |
+| GPU Operator (Opt 2) | ✅ |
+| DCGM → Prometheus (Piece 4) | ✅ |
+| Kueue (quota + gang) | ✅ |
+| in-place pod resize (<1 min) | ⏳ deferred — non-GPU (kind/free) |
+| RCA bot (<10 min) | ⏳ deferred — designed; non-GPU (kind/free) |
+| >98% SLO dashboard | ⏳ deferred — non-GPU (kind/free) |
+| **MIG (Piece 3)** | ⛔ deferred — needs A100/H100 (g5/A10G can't MIG); AWS A100 = $$ + quota-gated; separate session if ever |
+| time-slicing demo | ⏳ deferred — works on A10G, needs a GPU session |
+
+**Nothing remaining needs the GPU foundry running** (MIG is the only GPU-hardware piece,
+deferred). → **Tear down** between sessions: `cd infra/addons && terraform destroy` then
+`cd .. && terraform destroy`; verify `aws eks list-clusters` empty. Code all in git;
+re-apply ~15 min. **git push still pending (M6+M7 stack).**
+
+**Next session (free, on kind):** in-place resize → RCA bot → SLO dashboard.
+
 **Driver decision RESOLVED → Opt 2** (see m7-concepts §7): GPU node
 `ami_type = AL2023_x86_64_NVIDIA` (driver+runtime prebaked by AWS) + GPU Operator
 `--set driver.enabled=false` (Operator supplies device-plugin + DCGM + MIG-manager + NFD).
