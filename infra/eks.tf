@@ -29,9 +29,12 @@ module "eks" {
     # GPU workloads. desired_size=0 by default => $0 between sessions; scale to 1 to test.
     gpu = {
       instance_types = [var.gpu_instance_type]
-      # BASE AMI (no preinstalled NVIDIA driver) on purpose — we want to WATCH the GPU
-      # Operator install driver/toolkit/device-plugin/DCGM. (Use *_NVIDIA_* for prebaked.)
-      ami_type     = "AL2023_x86_64_STANDARD"
+      # EKS GPU-optimized AMI: NVIDIA driver + container runtime PREBAKED by AWS.
+      # The GPU Operator then runs with driver.enabled=false and supplies the rest
+      # (device-plugin + DCGM + MIG-manager + NFD). See docs/m7-concepts.md §7 — the
+      # Operator's driver-container doesn't support Amazon Linux, so prebaked is the
+      # reliable EKS path.
+      ami_type     = "AL2023_x86_64_NVIDIA"
       min_size     = 0
       max_size     = var.gpu_max_size
       desired_size = var.gpu_desired_size
