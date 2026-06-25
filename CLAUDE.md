@@ -136,10 +136,16 @@ build only after M8 so the core stays mapped to the MLOps-platform JD.)
 
 ## Current state (update this section as we go)
 
-- Active milestone: **M6 NEARLY COMPLETE (Serving + GPU sharing)** — Pieces 0 (model-aware
-  serving), 1 (vLLM benchmark, 27× throughput), 2 (Triton/ONNX) DONE; **MIG (P3) + DCGM
-  (P4) deferred to M7** (RunPod blocked host-level MIG: "Insufficient Permissions"; own
-  EKS+GPU Operator gives control). Write-ups drafted (Karthik to personalize). Kickoff done
+- Active milestone: **M7 IN PROGRESS (K8s GPU Platform).** Kickoff 2026-06-25:
+  K8s=solid→assume it; free-first (kind) strategy. **Terraform EKS+GPU module authored
+  (`infra/`)** — community modules, system + GPU node groups, GPU **desired=0** cost lever,
+  base AMI (Operator installs drivers), single NAT, EKS 1.31, IRSA; `validate` clean; plan
+  = 61 add/0/0. **Applying now** (Option A; ~$0.20/hr base, +$1/hr per GPU; teardown
+  `cd infra && terraform destroy`). Carries in M6 MIG(P3)+DCGM(P4). Concepts:
+  `docs/m7-concepts.md` (Kueue deep, Kueue-vs-KEDA, NCCL, namespaces, KServe). Log:
+  `docs/m7-session-notes.md`. **M6 COMPLETE** (P0-2 done; P3/P4 → M7; write-ups drafted).
+  Historical M6 detail:
+- (M6) Active milestone was **M6 (Serving + GPU sharing).** Kickoff done
   (2026-06-22): concepts taught + saved (`docs/m6-serving-concepts.md` — vLLM
   autoregression/prefill-decode/KV-cache, continuous batching, PagedAttention,
   time-slicing/MPS/MIG + the two-layer "sharing vs vLLM" model, dispatch-vs-router).
