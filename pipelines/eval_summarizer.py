@@ -6,9 +6,6 @@ the task is generation (longer outputs) and the metric is ROUGE-L, not macro-F1.
     python -m pipelines.eval_summarizer        # (on the GPU pod, after training)
 """
 
-import json
-from pathlib import Path
-
 ADAPTER_DIR = "models/fpb-summarizer"
 TEST_FILE = "data/instruction_summ/test.jsonl"
 MAX_NEW_TOKENS = 160  # summaries are multi-sentence, not a single label word
