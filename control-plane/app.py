@@ -24,6 +24,18 @@ EXPECTED_SCHEMA = "v1"
 # the ONE true frozen exam — gate 2 pins every model to this, incumbent or not
 EXPECTED_HASH = "145f42323f06bb454c002cb740019e3f8b87d3e755c4e4fbdc37e1604af9f0b2"
 
+# TODO(task-aware gate): make the gate per-MODEL so a 2nd task (summarizer) can be governed.
+# Each model gets its OWN frozen exam + score policy; promote() should look up by the `name`
+# path param (NOT the global MODEL_NAME) so each model is gated against ITSELF.
+#   GATE_CONFIG = {
+#     "fpb-sentiment":  {"expected_hash": EXPECTED_HASH, "expected_schema": "v1",
+#                        "margin": 0.01, "floor": 0.40},
+#     "fpb-summarizer": {"expected_hash": "<ECTSum test-set hash>", "expected_schema": "v1",
+#                        "margin": 0.01, "floor": 0.0},   # ROUGE-L score; first version clears floor
+#   }
+# Comparisons stay same-task/same-metric (each model vs its own incumbent), so F1-vs-F1 and
+# ROUGE-vs-ROUGE never cross. Fill the summarizer hash after the first register_summarizer.
+
 # point at the repo-root mlflow.db with an ABSOLUTE path, so it works no matter
 # which directory uvicorn is launched from.
 _DB = Path(__file__).resolve().parent.parent / "mlflow.db"
@@ -76,16 +88,21 @@ def promote(name: str, req: PromoteRequest) -> dict:
     Reject with HTTPException(status_code=409, detail="<why>") so the caller sees the
     exact policy that blocked it. A rejection must change nothing.
     """
+    # TODO(task-aware gate): make this work for ANY registered model, keyed on `name`:
+    #   cfg = GATE_CONFIG.get(name); if cfg is None: reject(base, 404, "no gate config for model")
+    #   and thread `name` through get_dossier(name, ...), get_production_version(name),
+    #   set_registered_model_alias(name, ...). Use cfg["expected_hash"]/["expected_schema"]/
+    #   ["margin"]/["floor"] below instead of the sentiment-only globals.
     base = {"model": name, "version": req.version, "approved_by": req.approved_by}
     candidate = get_dossier(req.version)
 
     if not req.approved_by:
         reject(base, 400, "approved_by required")
 
-    if candidate["eval_set_hash"] != EXPECTED_HASH:
+    if candidate["eval_set_hash"] != EXPECTED_HASH:  # TODO: cfg["expected_hash"]
         reject(base, 409, "eval-set hash mismatch — not the canonical frozen test set")
 
-    if candidate["schema_version"] != EXPECTED_SCHEMA:
+    if candidate["schema_version"] != EXPECTED_SCHEMA:  # TODO: cfg["expected_schema"]
         reject(base, 409, f"schema {candidate['schema_version']} incompatible with {EXPECTED_SCHEMA}")
 
     cand_f1 = float(candidate["test_f1"])
