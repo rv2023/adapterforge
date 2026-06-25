@@ -51,6 +51,14 @@ docs/drift_report.html
 *.onnx
 *.onnx.data
 
+# Terraform (M7) — keep .terraform.lock.hcl (pins providers); ignore the rest.
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfvars
+crash.log
+crash.*.log
+
 # OS / editor
 .DS_Store
 .idea/
