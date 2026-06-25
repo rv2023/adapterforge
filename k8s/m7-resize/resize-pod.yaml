@@ -1,0 +1,21 @@
+# A long-running pod we'll resize WITHOUT restarting it.
+# resizePolicy says HOW each resource may change live:
+#   NotRequired      -> apply in place, no container restart
+#   RestartContainer -> must restart the container to apply
+# We use NotRequired for both so the resize is non-disruptive (the "agility" demo).
+apiVersion: v1
+kind: Pod
+metadata:
+  name: resize-demo
+spec:
+  containers:
+    - name: app
+      image: nginx
+      resources:
+        requests: { cpu: "100m", memory: "128Mi" }
+        limits: { cpu: "200m", memory: "256Mi" }
+      resizePolicy:
+        - resourceName: cpu
+          restartPolicy: NotRequired
+        - resourceName: memory
+          restartPolicy: NotRequired

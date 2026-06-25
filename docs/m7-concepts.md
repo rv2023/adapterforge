@@ -283,3 +283,52 @@ real failed pod via kubeconfig), then wrap in FastAPI for the Alertmanager demo.
 the serving design (logic + thin web wrapper). **Tutor-protected component → Karthik
 writes the logic.** Tested via **3 injected failures** (OOM, data-validation [reuse M1
 `corrupt.py`], NCCL timeout) measuring <10 min. **No GPU needed.**
+
+---
+
+## 10. In-place pod resize (the agility piece) + VPA
+
+**JD line:** in-place container resizing **<1 min, no restart**.
+
+**The mechanism (`InPlacePodVerticalScaling`):** normally changing a pod's CPU/memory
+recreates the pod (a restart — disruptive for a workspace/serving pod with warm state).
+In-place resize lets the **kubelet adjust a running container's cgroup limits live**, no
+restart. Each container declares a `resizePolicy` per resource:
+- `NotRequired` → apply in place (non-disruptive)
+- `RestartContainer` → must restart the container to apply
+
+Resize via the **resize subresource**:
+`kubectl patch pod <p> --subresource resize --patch '{...resources...}'`.
+**Proof the demo needs:** resources change, **`restartCount` stays the same** (no restart),
+and the patch takes **well under 1 min**.
+
+**Feature gate:** alpha in k8s 1.31 (off by default), on-by-default in 1.33 → so we do it
+on **kind** (where we can enable the gate; EKS can't easily flip apiserver/kubelet gates).
+
+**memory + `RestartContainer` nuance (the quiz):** *shrinking* memory live is unsafe — a
+process may already be holding pages it can't be forced to release, so memory often uses
+`RestartContainer` to apply a decrease cleanly. CPU is a soft/throttleable limit → resizes
+live fine.
+
+### In-place resize (mechanism) vs VPA (controller)
+| | In-place resize | VPA (Vertical Pod Autoscaler) |
+|---|---|---|
+| What | core K8s **mechanism** to change a running pod's resources | add-on **controller** that *decides* sizes from observed usage |
+| Role | the **hands** (applies, no restart) | the **brain** (recommends/sets) |
+| Installed here | yes (feature gate) | **no** — we resize manually |
+
+They **compose**: historically VPA applied recommendations by **evict+recreate** (restart);
+now it can apply them **in-place** (no restart) using this mechanism. The autoscaler map:
+**HPA** = more replicas (horizontal) · **KEDA** = event-driven horizontal (scale-to-zero) ·
+**VPA** = bigger pod (vertical) · **in-place resize** = the *apply* mechanism for vertical
+changes without a restart. For the deliverable we resize **manually** to show the
+mechanism + agility; VPA is the optional automation layer (out of scope, name it in
+interview).
+
+### Steps (kind) — manifests in `k8s/m7-resize/`
+1. `kind create cluster --name resize --config k8s/m7-resize/kind-config.yaml` (gate on)
+2. `kubectl apply -f k8s/m7-resize/resize-pod.yaml` (resizePolicy NotRequired cpu+mem)
+3. record before: `.spec.containers[0].resources` + `.status.containerStatuses[0].restartCount` (0)
+4. `time kubectl patch pod resize-demo --subresource resize --patch '{"spec":{"containers":[{"name":"app","resources":{"requests":{"cpu":"500m","memory":"256Mi"},"limits":{"cpu":"1","memory":"512Mi"}}}]}}'`
+5. verify: resources changed, **restartCount still 0**, time < 1 min
+6. `kind delete cluster --name resize`

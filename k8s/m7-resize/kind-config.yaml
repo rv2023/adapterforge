@@ -1,0 +1,10 @@
+# kind cluster with in-place pod resize enabled. The InPlacePodVerticalScaling feature
+# gate is ALPHA in k8s 1.31 (off by default) — kind lets us turn it on for all components.
+# (EKS can't easily flip apiserver/kubelet feature gates, which is why this piece is on kind.)
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+featureGates:
+  InPlacePodVerticalScaling: true
+nodes:
+  - role: control-plane
+    # image: kindest/node:v1.31.x   # optional pin; omit to use your kind's default node

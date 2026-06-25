@@ -2,16 +2,16 @@
 # has sane defaults, so plan/apply work without this file. (terraform.tfvars is gitignored;
 # this .example is committed as documentation.)
 
-# region       = "us-east-1"
-# cluster_name = "adapterforge"
-# eks_version  = "1.31"
-# vpc_cidr     = "10.0.0.0/16"
-# az_count     = 2
+region       = "us-east-1"
+cluster_name = "adapterforge"
+eks_version  = "1.31"
+vpc_cidr     = "10.0.0.0/16"
+az_count     = 2
 
-# --- the GPU cost lever -----------------------------------------------------
-# gpu_instance_type = "g5.xlarge"   # 1x A10G, ~$1/hr on-demand
-# gpu_max_size      = 2
-#
+#--- the GPU cost lever -----------------------------------------------------
+gpu_instance_type = "g5.xlarge"   # 1x A10G, ~$1/hr on-demand
+gpu_max_size      = 1
+
 # Keep at 0 between sessions = $0 GPU. Set to 1, `apply`, do your lab, then set back
 # to 0 and `apply` again to stop GPU billing (control plane + system node still bill).
-# gpu_desired_size  = 0
+gpu_desired_size  = 0

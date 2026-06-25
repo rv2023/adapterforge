@@ -100,6 +100,17 @@ re-apply ~15 min. **git push still pending (M6+M7 stack).**
 
 **Next session (free, on kind):** in-place resize → RCA bot → SLO dashboard.
 
+### In-place resize — SCAFFOLDED (run pending), concepts §10
+Manifests in `k8s/m7-resize/`: `kind-config.yaml` (InPlacePodVerticalScaling gate on —
+alpha in 1.31, so kind not EKS) + `resize-pod.yaml` (nginx, resizePolicy NotRequired
+cpu+mem). Steps (kind create → apply → patch `--subresource resize` → verify resources
+changed + **restartCount unchanged** + <1 min → kind delete) in concepts §10. Tools
+present: kind 0.23 (k8s 1.30 node), kubectl 1.33. **Learning:** in-place resize = the
+*mechanism* (the hands); **VPA** = the optional *controller* (the brain, decides from
+usage) — not installed, we resize manually; they compose (VPA can now apply in-place
+instead of evict+recreate). memory-shrink often uses `RestartContainer` (can't safely
+reclaim in-use pages). **Run pending** — execute on kind next session or now.
+
 **Driver decision RESOLVED → Opt 2** (see m7-concepts §7): GPU node
 `ami_type = AL2023_x86_64_NVIDIA` (driver+runtime prebaked by AWS) + GPU Operator
 `--set driver.enabled=false` (Operator supplies device-plugin + DCGM + MIG-manager + NFD).
