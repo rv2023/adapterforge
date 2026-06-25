@@ -136,7 +136,13 @@ build only after M8 so the core stays mapped to the MLOps-platform JD.)
 
 ## Current state (update this section as we go)
 
-- Active milestone: **M7 IN PROGRESS (K8s GPU Platform).** Kickoff 2026-06-25:
+- Active milestone: **M8 (Capstone — multi-adapter routing).** Kickoff pending.
+  Deferred/pending M6+M7 tasks consolidated in **`docs/deferred-backlog.md`** (MIG/
+  time-slicing [need GPU], in-place resize [scaffolded, run on kind], RCA bot [designed,
+  build on kind], SLO dashboard, M6 write-up personalization, M1 README). AWS fully
+  destroyed ($0). **M7 CORE DONE** (Terraform EKS + GPU Operator + DCGM→Prometheus +
+  Kueue, all on real EKS); rest = backlog. Prior M7 detail:
+- (M7) **K8s GPU Platform.** Kickoff 2026-06-25:
   K8s=solid→assume it; free-first (kind) strategy. **Terraform EKS+GPU module authored
   (`infra/`)** — community modules, system + GPU node groups, GPU **desired=0** cost lever,
   prebaked-driver GPU AMI (`AL2023_x86_64_NVIDIA`) + Operator `driver.enabled=false`
