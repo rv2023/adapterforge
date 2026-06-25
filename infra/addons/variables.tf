@@ -13,3 +13,9 @@ variable "gpu_operator_version" {
   type        = string
   default     = null
 }
+
+variable "kube_prometheus_stack_version" {
+  description = "kube-prometheus-stack chart version. null => latest. TODO: pin for reproducibility."
+  type        = string
+  default     = null
+}

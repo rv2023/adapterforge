@@ -13,6 +13,16 @@ resource "helm_release" "gpu_operator" {
     name  = "driver.enabled"
     value = "false"
   }
+
+  # Have the Operator create a ServiceMonitor for dcgm-exporter so Prometheus scrapes GPU
+  # metrics. The ServiceMonitor CRD comes from kube-prometheus-stack, so it must exist
+  # first -> depends_on below ensures ordering on apply.
+  set {
+    name  = "dcgmExporter.serviceMonitor.enabled"
+    value = "true"
+  }
+
+  depends_on = [helm_release.kube_prometheus_stack]
 }
 
 # TODO(next M7 pieces): add as we reach them, in this same addons module —
