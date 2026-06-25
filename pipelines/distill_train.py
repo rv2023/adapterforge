@@ -71,7 +71,9 @@ def build_distill_collator(tokenizer):
     return collate
 
 
-from transformers import Trainer
+# noqa-E402: kept here (not top) so importing this module stays lazy/light; Trainer must
+# be module-level because DistillTrainer subclasses it at definition time.
+from transformers import Trainer  # noqa: E402
 
 
 class DistillTrainer(Trainer):
