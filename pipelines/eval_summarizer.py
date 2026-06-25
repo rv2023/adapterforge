@@ -6,24 +6,31 @@ the task is generation (longer outputs) and the metric is ROUGE-L, not macro-F1.
     python -m pipelines.eval_summarizer        # (on the GPU pod, after training)
 """
 
+import json
+from pathlib import Path
+
+import torch
+from rouge_score import rouge_scorer
+
 ADAPTER_DIR = "models/fpb-summarizer"
 TEST_FILE = "data/instruction_summ/test.jsonl"
 MAX_NEW_TOKENS = 160  # summaries are multi-sentence, not a single label word
+_ROUGE_SCORER = rouge_scorer.RougeScorer(["rougeL"], use_stemmer=True)
 
 
 def generate_summary(model, tokenizer, messages) -> str:
     """[system, user] -> the model's generated summary (greedy)."""
-    # TODO: reuse the eval_adapter generate pattern but with MAX_NEW_TOKENS, decode the
-    # NEW tokens only (skip the prompt), return the text. (No label-parsing — it's free text.)
-    raise NotImplementedError
+    ids = tokenizer.apply_chat_template(
+        messages, add_generation_prompt=True, return_tensors="pt", return_dict=True
+    ).to(model.device)
+    prompt_len = ids["input_ids"].shape[-1]
+    out = model.generate(**ids, max_new_tokens=MAX_NEW_TOKENS, do_sample=False)
+    return tokenizer.decode(out[0, prompt_len:], skip_special_tokens=True).strip()
 
 
 def rouge_l(prediction: str, reference: str) -> float:
     """ROUGE-L F-measure between one prediction and its reference summary."""
-    # TODO: from rouge_score import rouge_scorer   (pip install rouge-score)
-    #       scorer = rouge_scorer.RougeScorer(["rougeL"], use_stemmer=True)
-    #       return scorer.score(reference, prediction)["rougeL"].fmeasure
-    raise NotImplementedError
+    return _ROUGE_SCORER.score(reference, prediction)["rougeL"].fmeasure
 
 
 def main() -> float:
@@ -31,17 +38,47 @@ def main() -> float:
 
     The bar = ROUGE-L(adapter) must beat ROUGE-L(base, no adapter). Print both.
     """
-    # TODO: load adapter:  eval_adapter.load_model_and_tokenizer(adapter_dir=ADAPTER_DIR)
-    # TODO: load base (no adapter) for the zero-shot bar (same base, no PeftModel)
-    # TODO: for each test line: build [system,user] (summarize_format.build_chat_messages),
-    #       generate with each model, accumulate rouge_l vs the reference (messages[-1] summary)
-    # TODO: rouge_adapter = mean(...); rouge_base = mean(...)
-    # TODO: write {"test_f1": rouge_adapter, "n_test": n, "metric": "rougeL",
-    #              "base_rougeL": rouge_base} to ADAPTER_DIR/eval_metrics.json
-    #       (register_adapter reads "test_f1" as the gate score — store ROUGE-L there;
-    #        see the gate-is-sentiment-pinned note before promoting.)
-    # TODO: print(f"rougeL adapter={...} base={...} beat_bar={adapter>base}"); return rouge_adapter
-    raise NotImplementedError
+    from pipelines import eval_adapter, summarize_format
+
+    model, tokenizer = eval_adapter.load_model_and_tokenizer(adapter_dir=ADAPTER_DIR)
+
+    adapter_scores = []
+    base_scores = []
+    with torch.inference_mode(), open(TEST_FILE, encoding="utf-8") as f:
+        for line in f:
+            messages = json.loads(line)["messages"]
+            reference = messages[-1]["content"].strip()
+            user_content = messages[-2]["content"]
+            if user_content.startswith(summarize_format.INSTRUCTION):
+                transcript = user_content[len(summarize_format.INSTRUCTION) :]
+            else:
+                transcript = user_content
+            prompt = summarize_format.build_chat_messages(transcript)
+
+            adapter_scores.append(rouge_l(generate_summary(model, tokenizer, prompt), reference))
+            with model.disable_adapter():
+                base_scores.append(rouge_l(generate_summary(model, tokenizer, prompt), reference))
+
+    n = len(adapter_scores)
+    rouge_adapter = sum(adapter_scores) / n
+    rouge_base = sum(base_scores) / n
+    metrics_path = Path(ADAPTER_DIR) / "eval_metrics.json"
+    metrics_path.write_text(
+        json.dumps(
+            {
+                "test_f1": rouge_adapter,
+                "n_test": n,
+                "metric": "rougeL",
+                "base_rougeL": rouge_base,
+            }
+        ),
+        encoding="utf-8",
+    )
+    print(
+        f"rougeL adapter={rouge_adapter:.4f} base={rouge_base:.4f} "
+        f"beat_bar={rouge_adapter > rouge_base}"
+    )
+    return rouge_adapter
 
 
 if __name__ == "__main__":

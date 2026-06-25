@@ -88,6 +88,26 @@ to :5555 (was clashing with Marquez API :5000).
 model-agnostic (psi 16.7; Evidently report written). Drift is now entirely decoupled from
 the served model.
 
+## Session 4 — 2026-06-25 (2nd adapter / summarization — prep + data verified)
+
+Scaffolded the summarization pipeline (concepts §9); reuses M5 QLoRA heavily.
+- `pipelines/summarize_format.py` — ECTSum (GitHub repo zip) → chat-messages JSONL.
+  **load_ectsum VERIFIED**: train 1681 / val 249 / test 495 (ECTSum's real sizes), sample
+  transcript→bullet-summary correct. `python -m pipelines.summarize_format` writes
+  data/instruction_summ/*.jsonl.
+- `pipelines/finetune.py` — DATA_DIR/ADAPTER_DIR env-overridable (AF_DATA_DIR/AF_ADAPTER_DIR)
+  → same SFT trains the summarizer (data/instruction_summ → models/fpb-summarizer).
+- `pipelines/eval_summarizer.py` — ROUGE-L vs base zero-shot (base via
+  model.disable_adapter()); writes eval_metrics.json. Needs `pip install rouge-score`; GPU.
+- DS format taught (concepts §9): raw ECTSum = (transcript.txt, summary.txt) pairs →
+  chat JSONL where transcript=prompt, summary=SFT target. Same shape as sentiment → finetune reused.
+
+**Run (GPU session):** `python -m pipelines.summarize_format` → `AF_MODE=real
+AF_DATA_DIR=data/instruction_summ AF_ADAPTER_DIR=models/fpb-summarizer python -m
+pipelines.finetune` → `python -m pipelines.eval_summarizer`.
+**⚠️ Open design:** register/promote `fpb-summarizer` needs a **task-aware gate** (current
+gate is sentiment-pinned: EXPECTED_HASH + F1). Then wire router `build_summarizer`.
+
 **M8 remaining:** 2nd LoRA adapter (summarization, ECTSum — GPU) · hot-swap + KServe
 (cluster/GPU) · CRD/operator stretch (free, kind) · polish (arch diagram, README JD-map,
 demo). Free/local M8 core (router + both debts) is DONE.

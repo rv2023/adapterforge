@@ -9,8 +9,12 @@ but with a summarization prompt + ECTSum data. Output feeds the SAME finetune.py
 
 from pathlib import Path
 import json
+import urllib.request
+import zipfile
 
 OUT_DIR = Path("data/instruction_summ")
+ECTSUM_ZIP_URL = "https://codeload.github.com/rajdeep345/ECTSum/zip/refs/heads/main"
+ECTSUM_ZIP_PATH = Path("/tmp/ectsum-main.zip")
 
 # Summarization prompt contract (separate task -> its own prompt; cf. instruction_format).
 SYSTEM_PROMPT = "You are an earnings-call summarizer."
@@ -31,16 +35,27 @@ def to_chat_example(transcript: str, summary: str) -> dict:
 
 
 def load_ectsum():
-    """Return (train, val, test) of (transcript, summary) pairs from ECTSum.
+    """Return (train, val, test) of (transcript, summary) pairs from ECTSum."""
+    if not ECTSUM_ZIP_PATH.exists():
+        urllib.request.urlretrieve(ECTSUM_ZIP_URL, ECTSUM_ZIP_PATH)
 
-    TODO: load ECTSum (HF `datasets`), find the transcript + summary columns, return the
-    three splits. Confirm the exact HF dataset id + column names when you run it.
-    """
-    # TODO: from datasets import load_dataset
-    # TODO: ds = load_dataset("<ectsum-hf-id>")   # confirm id + split names
-    # TODO: map each split to (transcript, summary) using the right column names
-    # TODO: return train, val, test
-    raise NotImplementedError
+    def pairs(zf: zipfile.ZipFile, split_name: str) -> list[tuple[str, str]]:
+        prefix = f"ECTSum-main/data/final/{split_name}/ects/"
+        transcript_names = sorted(
+            name
+            for name in zf.namelist()
+            if name.startswith(prefix) and name.endswith(".txt")
+        )
+        rows = []
+        for transcript_name in transcript_names:
+            summary_name = transcript_name.replace("/ects/", "/gt_summaries/")
+            transcript = zf.read(transcript_name).decode("utf-8").strip()
+            summary = zf.read(summary_name).decode("utf-8").strip()
+            rows.append((transcript, summary))
+        return rows
+
+    with zipfile.ZipFile(ECTSUM_ZIP_PATH) as zf:
+        return pairs(zf, "train"), pairs(zf, "val"), pairs(zf, "test")
 
 
 def write_jsonl(rows: list[dict], path: Path) -> None:
@@ -52,12 +67,11 @@ def write_jsonl(rows: list[dict], path: Path) -> None:
 
 def main() -> None:
     """ECTSum -> data/instruction_summ/{train,val,test}.jsonl (chat-messages for SFT)."""
-    # TODO: train, val, test = load_ectsum()
-    # TODO: for split_name, pairs in [("train",train),("val",val),("test",test)]:
-    #           rows = [to_chat_example(t, s) for (t, s) in pairs]
-    #           write_jsonl(rows, OUT_DIR / f"{split_name}.jsonl")
-    #           print(split_name, len(rows))
-    raise NotImplementedError
+    train, val, test = load_ectsum()
+    for split_name, pairs in (("train", train), ("val", val), ("test", test)):
+        rows = [to_chat_example(t, s) for t, s in pairs]
+        write_jsonl(rows, OUT_DIR / f"{split_name}.jsonl")
+        print(split_name, len(rows))
 
 
 if __name__ == "__main__":

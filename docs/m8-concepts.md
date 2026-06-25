@@ -180,3 +180,39 @@ Named for completeness; the feedback loop isn't simulated yet.
 
 One-liner: *data drift = inputs look different (catch from X, unsupervised); concept drift
 = same inputs now mean something different (catch only via labels / accuracy decay).*
+
+---
+
+## 9. The 2nd adapter — summarization (ECTSum)
+
+**Why:** the router can only route by *task* if there's more than one task. Sentiment is
+task 1 (LLM + student); the summarizer is **task 2**, which makes the router's `summarizer`
+backend real and demonstrates "multi-adapter serving" (the JD line).
+
+**Reuse:** summarization needs the SAME machinery as the sentiment LLM (QLoRA SFT on
+chat-messages JSONL), so `finetune.py` is reused unchanged — `DATA_DIR`/`ADAPTER_DIR` are
+now env-overridable (`AF_DATA_DIR`/`AF_ADAPTER_DIR`). Only the data-prep + eval differ.
+
+**Dataset (ECTSum):** pulled from the GitHub repo zip (rajdeep345/ECTSum). Raw form =
+file pairs per split: `data/final/{train,val,test}/ects/<id>.txt` (transcript) +
+`gt_summaries/<id>.txt` (bullet summary). Sizes: **train 1681 / val 249 / test 495**
+(verified). Summaries anonymize the company as `compname`.
+
+**Conversion (`summarize_format.py`):** each (transcript, summary) pair →
+`{"messages":[{system: "You are an earnings-call summarizer."}, {user: INSTRUCTION+transcript},
+{assistant: summary}]}` → `data/instruction_summ/{train,val,test}.jsonl`. The **assistant
+turn is the SFT target**. Same shape as the sentiment instruction data (→ finetune reused).
+
+**Eval (`eval_summarizer.py`):** metric = **ROUGE-L** (overlap of generated vs reference
+summary), not F1. Bar = ROUGE-L(adapter) > ROUGE-L(**base zero-shot**); the base is gotten
+elegantly via `model.disable_adapter()` on the same loaded PeftModel. Writes
+`eval_metrics.json` (stores ROUGE-L in `test_f1` = "the gate's score"). Needs `rouge-score`.
+
+**Pipeline:** `summarize_format` (data ✅ verified) → `finetune` (AF_DATA_DIR/AF_ADAPTER_DIR,
+GPU) → `eval_summarizer` (GPU) → register as `fpb-summarizer` + wire router `build_summarizer`.
+
+**⚠️ Open design — the sentiment-pinned gate:** the control-plane promotion gate checks
+`eval_set_hash == EXPECTED_HASH` (the *sentiment* frozen test set) + an F1 margin. The
+summarizer's eval set (ECTSum) + metric (ROUGE-L) differ → it **can't pass the same gate**.
+Promoting `fpb-summarizer` needs a **task-aware gate** (its own expected hash + metric) or a
+separate path. Design before the register step.
