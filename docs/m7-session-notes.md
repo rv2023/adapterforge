@@ -111,6 +111,21 @@ usage) — not installed, we resize manually; they compose (VPA can now apply in
 instead of evict+recreate). memory-shrink often uses `RestartContainer` (can't safely
 reclaim in-use pages). **Run pending** — execute on kind next session or now.
 
+### Status decision (2026-06-25): concepts KNOWN → marking as understood, not running
+Karthik has the concepts; marking the **config-demo** pieces as understood rather than
+running every hands-on:
+- **In-place resize** — concept KNOWN (mechanism vs VPA, resizePolicy, restartCount proof);
+  scaffold in `k8s/m7-resize/`; hands-on **skipped by choice** (run anytime, it's free).
+- **SLO dashboard** (>98% success-rate Grafana/PromQL) — concept KNOWN; **skipped** (a
+  Grafana panel over Prometheus; would build on the kube-prometheus-stack already wired).
+- **RCA bot** — the one remaining piece worth **building** (real Python logic, the JD
+  "automated RCA <10 min" standout). Designed in concepts §9. Decision pending: build it
+  vs move to M8.
+
+**M7 effectively complete on the platform core** (Terraform EKS + GPU Operator + DCGM→
+Prometheus + Kueue, all done on real EKS). Remaining = RCA bot (build, optional) +
+MIG/time-slicing (need GPU, deferred).
+
 **Driver decision RESOLVED → Opt 2** (see m7-concepts §7): GPU node
 `ami_type = AL2023_x86_64_NVIDIA` (driver+runtime prebaked by AWS) + GPU Operator
 `--set driver.enabled=false` (Operator supplies device-plugin + DCGM + MIG-manager + NFD).
