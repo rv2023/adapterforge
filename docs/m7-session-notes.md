@@ -45,6 +45,24 @@ core pods (aws-node/coredns/kube-proxy) Running. GPU node desired=0 (none yet).
 **Addon decisions:** storage = **ephemeral/emptyDir** for observability (Option B — no
 EBS CSI; cluster is destroy-per-session). **ALB controller + ExternalDNS skipped** →
 deferred to M8 (external serving exposure); M7 uses `kubectl port-forward`.
+**DONE this session (2026-06-25):**
+- `infra/` applied (cluster `adapterforge` live; GPU node group ami_type → AL2023_x86_64_NVIDIA).
+- Scaled GPU node to 1 **via AWS CLI** (`aws eks update-nodegroup-config ... desiredSize=1`) —
+  the EKS module **ignore_changes** on `scaling_config.desired_size` (autoscaler coexistence),
+  so tfvars `gpu_desired_size` does nothing after create; desired is managed out-of-band.
+- **GPU Operator provisioned the node** (Opt 2): device-plugin + container-toolkit +
+  **dcgm-exporter** + gpu-feature-discovery + validators all Running; cuda-validator
+  Completed (driver+CUDA work). **No mig-manager** — A10G (g5.xlarge) doesn't support MIG.
+- **Piece 4 DONE**: `infra/addons/` now has kube-prometheus-stack (ephemeral) +
+  dcgm ServiceMonitor → Prometheus scrapes GPU metrics → Grafana. (Optional load-graph
+  via a gpu-burn pod.)
+- **⚠️ MIG (Piece 3) blocked on hardware:** needs A100/H100 (p4d/p5) — expensive + AWS
+  quota-gated. Decide at Piece 3: short A100-node session vs theory; time-slicing (no-iso
+  half) works on A10G.
+
+**Remaining M7 (all non-GPU → do with GPU=0 or on kind):** Kueue (quota+gang), in-place
+resize (<1 min), RCA bot (<10 min), >98% SLO dashboard.
+
 **Driver decision RESOLVED → Opt 2** (see m7-concepts §7): GPU node
 `ami_type = AL2023_x86_64_NVIDIA` (driver+runtime prebaked by AWS) + GPU Operator
 `--set driver.enabled=false` (Operator supplies device-plugin + DCGM + MIG-manager + NFD).
