@@ -23,19 +23,29 @@ And recall the model-type split (concepts §11c): **encoder/classifier → ONNX/
 **decoder LLM → vLLM / TensorRT-LLM**, not plain ONNX.
 
 ## When I'd pick each (Karthik — your words)
-<!-- TODO(Karthik): one or two sentences each, from the project's experience.
-     Prompts to address:
-     - vLLM vs TGI: both are LLM engines — what would tip you one way? (you used vLLM;
-       what did you like? when might TGI win?)
-     - Triton: when is the generalist the right call over a per-model engine?
-       (mixed fleet, the student via ONNX, dynamic batching, one ops surface)
-     - KServe: what does it add that Triton/vLLM don't? (and why it's the M8 choice)
-     - DeepSpeed: the one situation it's clearly the answer (model > 1 GPU).
-     - TorchServe: would you pick it today? why / why not?
-     Tie back to THIS project: LLM → vLLM (Piece 1); student → Triton/ONNX (Piece 2);
-     M8 router puts cheap classification on the student slice, generation on the LLM. -->
+<!-- DRAFT (Claude) — Karthik to rewrite in his own voice + be ready to defend each call. -->
+- **vLLM** — my default for **LLM serving** (used it in Piece 1): PagedAttention, strong
+  multi-LoRA support, OpenAI-compatible API, broad adoption. It's what I'd reach for to
+  serve the Qwen+LoRA adapter at high throughput.
+- **TGI** — the main vLLM alternative; same idea (continuous batching, tensor parallel,
+  quantization). I'd pick it over vLLM mainly in a **HuggingFace-centric** shop already
+  standardized on HF tooling; otherwise vLLM.
+- **Triton** — when serving a **mixed fleet** of (mostly non-LLM) models — classifiers,
+  embeddings, vision — behind **one production server** with dynamic batching, versioning,
+  and metrics. That's exactly the DistilBERT student via ONNX in Piece 2. For LLMs inside
+  Triton I'd use its **vLLM / TensorRT-LLM backend**, not plain ONNX (§11c).
+- **KServe** — when I'm **on Kubernetes** and want **serverless inference** (autoscaling,
+  scale-to-zero), **canary rollouts**, and standardized `InferenceService` deploys. It
+  **wraps** engines like Triton/vLLM rather than replacing them — which is why it's the
+  **M8** choice (we're on EKS by then).
+- **DeepSpeed-Inference / MII** — when the **model is too big for one GPU** and I need
+  tensor parallelism / ZeRO-Inference across GPUs. Not relevant for a 1.5B model.
+- **TorchServe** — probably **wouldn't pick today** for new work: general PyTorch serving
+  but not LLM-optimized and has lost momentum; Triton fills the generalist role better.
 
 ## One-liner to say in an interview (Karthik — your words)
-<!-- TODO(Karthik): a single sentence that captures the engine-vs-orchestrator split and
-     the model-type→stack rule, so you can answer "how do you choose a serving stack?"
-     unprompted. -->
+<!-- DRAFT (Claude) — make it yours. -->
+Separate the **engine** (how one model runs fast — vLLM/TGI/TensorRT-LLM/DeepSpeed) from
+the **orchestrator** (how models are hosted, scaled, versioned — Triton/KServe/
+TorchServe), then match by **model type**: decoder LLMs → vLLM/TensorRT-LLM, encoders/
+classifiers → ONNX on Triton — with KServe tying it together on Kubernetes.

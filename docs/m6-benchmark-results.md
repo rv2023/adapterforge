@@ -53,10 +53,19 @@ observability — including watching KV-cache VRAM grow with concurrency — lan
 **M6 Piece 4 (DCGM → Prometheus)**.
 
 ## Why vLLM wins
-<!-- TODO(Karthik): YOUR words (rule 5). One short paragraph. Hit: prefill vs decode,
-     why the naïve server leaves the GPU idle / serializes, what continuous batching
-     does differently, and (briefly) PagedAttention's role in fitting more concurrent
-     requests. See docs/m6-serving-concepts.md §4–5 if you need to refresh. -->
+<!-- DRAFT (Claude) — Karthik to rewrite in his own voice + practice saying it aloud. -->
+LLM inference is dominated by the **decode** phase, where the model emits **one token per
+forward pass** — a tiny amount of compute that leaves the GPU mostly idle between tokens.
+The naïve FastAPI server handles requests essentially **serially** (one `generate()` at a
+time, no cross-request batching), so that idle time is wasted and requests pile up behind
+each other: under load its p99 **explodes** (163 ms → 10.7 s at concurrency 32) and
+throughput actually **falls** (8.0 → 4.7 req/s) as contention rises. vLLM's **continuous
+batching** re-packs all in-flight requests into *every* decode step, keeping the GPU
+saturated, and **PagedAttention** stores each request's KV-cache in small on-demand pages
+so far more requests fit in VRAM at once — more requests available to batch. Net on the
+L4 at concurrency 32: **~27× the throughput** (128 vs 4.7 req/s) and **~35× lower p99**
+(302 ms vs 10.7 s), with vLLM's latency staying roughly flat while the naïve server's
+collapses.
 
 ## Reproduce
 See `docs/runpod-m6-benchmark.md` (pod setup → run both → pull results → teardown).
