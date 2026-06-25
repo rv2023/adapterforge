@@ -29,8 +29,10 @@ else:
     MAX_STEPS = 2
     BATCH_SIZE = 1
     NUM_EPOCHS = 1
-DATA_DIR = "data/instruction"
-ADAPTER_DIR = "models/fpb-lora"
+# Task-specific paths, env-overridable so the SAME SFT pipeline trains other adapters
+# (e.g. the M8 summarizer: AF_DATA_DIR=data/instruction_summ AF_ADAPTER_DIR=models/fpb-summarizer).
+DATA_DIR = os.getenv("AF_DATA_DIR", "data/instruction")
+ADAPTER_DIR = os.getenv("AF_ADAPTER_DIR", "models/fpb-lora")
 
 
 def load_datasets():
