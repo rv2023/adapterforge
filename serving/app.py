@@ -97,8 +97,21 @@ def build_distilbert_predictor(name: str, version: str):
     model.eval()
 
     def predict_fn(text: str):
-        label = eval_student.predict(model, tokenizer, [text])[0]
-        return label, None
+        import torch
+
+        device = next(model.parameters()).device
+        batch = tokenizer(
+            [text],
+            padding=True,
+            truncation=True,
+            max_length=128,
+            return_tensors="pt",
+        )
+        batch = {k: v.to(device) for k, v in batch.items()}
+        with torch.inference_mode():
+            probs = torch.softmax(model(**batch).logits, dim=-1)[0]
+        confidence, pred_id = probs.max(dim=-1)
+        return eval_student.LABELS[int(pred_id)], float(confidence)
 
     return predict_fn
 
