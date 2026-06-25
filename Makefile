@@ -10,7 +10,7 @@ install:  ## Create venv, install adapter-sdk (editable) + pipeline/serving deps
 	. .venv/bin/activate && pip install -e "adapter-sdk[dev]" && pip install -r requirements.txt
 
 test:  ## Run pytest across packages
-	. .venv/bin/activate && pytest adapter-sdk
+	. .venv/bin/activate && pytest adapter-sdk serving
 
 lint:  ## ruff check + format check
 	. .venv/bin/activate && ruff check adapter-sdk pipelines control-plane serving && ruff format --check adapter-sdk
