@@ -29,7 +29,7 @@ Each step below has a `make` shortcut; the raw command is shown too.
 | Land the training data (PhraseBank) | `python -c "from adapter_sdk.adapters.hf import HFDatasetAdapter; HFDatasetAdapter().run()"` |
 | Run the SDK tests | `make test` |
 | Train the baseline + log to MLflow | `python pipelines/baseline.py` |
-| Browse/compare runs in MLflow | `make mlflow` (→ :5000) |
+| Browse/compare runs in MLflow | `make mlflow` (→ :5555) |
 | See overfitting on a curve | `python pipelines/overfit.py` |
 | Register a model with its dossier | `make register` |
 | Run the governance API | `make control-plane` (→ :8000) |
@@ -62,7 +62,8 @@ The sections below walk each of these in order, with context.
 |------|---------|
 | 8000 | control plane (governance API) |
 | 8001 | serving (inference API) |
-| 5000 | MLflow UI **and** Marquez API — ⚠️ don't run both at once |
+| 5555 | MLflow UI |
+| 5000 | Marquez API |
 | 3000 | Dagster UI |
 | 3001 | Marquez web UI |
 | 6543 | Marquez Postgres |
@@ -106,7 +107,7 @@ python pipelines/baseline.py
 ```
 Compare runs in the MLflow UI:
 ```bash
-make mlflow            # http://localhost:5000   (stop with Ctrl+C)
+make mlflow            # http://localhost:5555   (stop with Ctrl+C)
 ```
 See overfitting on a curve (writes `docs/overfit_curve.png`):
 ```bash
@@ -168,7 +169,7 @@ make drift             # prints PSI/KS verdict; writes docs/drift_report.html
 make dagster           # http://localhost:3000 → "Materialize all"
 ```
 
-**4c. Lineage** with Marquez (needs Docker; ⚠️ stop the MLflow UI first — port 5000):
+**4c. Lineage** with Marquez (needs Docker):
 ```bash
 make lineage                       # Docker up: web :3001, api :5000
 python pipelines/lineage.py        # emit OpenLineage events

@@ -19,8 +19,8 @@ format:  ## ruff auto-format + fix
 	. .venv/bin/activate && ruff format adapter-sdk pipelines control-plane serving && ruff check --fix adapter-sdk pipelines control-plane serving
 
 # --- M2: tracking ---
-mlflow:  ## start the local MLflow UI (sqlite backend) at :5000
-	. .venv/bin/activate && mlflow ui --backend-store-uri sqlite:///mlflow.db
+mlflow:  ## start the local MLflow UI (sqlite backend) at :5555
+	. .venv/bin/activate && mlflow ui --backend-store-uri sqlite:///mlflow.db --port 5555
 
 # --- M3: control plane + serving ---
 register:  ## register the baseline as fpb-sentiment v1 with its dossier
