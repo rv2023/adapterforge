@@ -21,6 +21,7 @@ from pathlib import Path
 import requests
 
 from pipelines.instruction_format import INSTRUCTION as INSTRUCTION_PREFIX
+from pipelines.instruction_format import build_chat_messages
 
 CONCURRENCY_LEVELS = [1, 4, 8, 16, 32]
 N_REQUESTS = 200            # requests fired per concurrency level
@@ -70,10 +71,7 @@ def vllm_sender(url: str, model: str, prompt: str):
     endpoint = f"{url}/v1/chat/completions"
     payload = {
         "model": model,
-        "messages": [
-            {"role": "system", "content": "You are a financial sentiment classifier."},
-            {"role": "user", "content": INSTRUCTION_PREFIX + prompt},
-        ],
+        "messages": build_chat_messages(prompt),
         "max_tokens": 5,
         "temperature": 0,
     }

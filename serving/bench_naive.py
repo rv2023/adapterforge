@@ -24,7 +24,6 @@ _REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_REPO))
 
 ADAPTER_DIR = os.getenv("ADAPTER_DIR", "models/fpb-lora")
-SYSTEM_PROMPT = "You are a financial sentiment classifier."
 
 
 class PredictRequest(BaseModel):
@@ -40,7 +39,7 @@ async def lifespan(app: FastAPI):
     app.state.eval_adapter = eval_adapter
     app.state.model = model
     app.state.tokenizer = tokenizer
-    app.state.instruction = instruction_format.INSTRUCTION
+    app.state.build_messages = instruction_format.build_chat_messages  # shared prompt contract
     yield
 
 
@@ -51,10 +50,7 @@ app = FastAPI(title="AdapterForge Naive Serving (benchmark)", lifespan=lifespan)
 def predict(req: PredictRequest, request: Request) -> dict:
     """One statement -> one label. Same wire format as serving/app.py (/predict)."""
     state = request.app.state
-    messages = [
-        {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": state.instruction + req.text},
-    ]
+    messages = state.build_messages(req.text)
     with state.eval_adapter.torch.inference_mode():
         label = state.eval_adapter.predict_one(
             state.model,

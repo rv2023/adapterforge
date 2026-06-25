@@ -13,28 +13,23 @@ INSTRUCTION = (
     "Classify the financial sentiment of the following statement as exactly one "
     "of bullish, bearish, or neutral.\n\nStatement: "
 )
+# Single source of truth for the prompt contract. Training, serving (app.py /
+# bench_naive), and the benchmark client all import these so the prompt can never
+# drift between train and inference (a drifted prompt silently tanks accuracy).
+SYSTEM_PROMPT = "You are a financial sentiment classifier."
+
+
+def build_chat_messages(text: str) -> list[dict]:
+    """The [system, user] chat turns for one statement (no assistant turn)."""
+    return [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": INSTRUCTION + text},
+    ]
 
 
 def to_chat_example(text: str, label: str) -> dict:
-    """Turn one (text, label) row into a chat-messages dict.
-
-    Target shape:
-        {"messages": [
-            {"role": "user",      "content": <INSTRUCTION + the statement>},
-            {"role": "assistant", "content": <the bare label word>},
-        ]}
-    """
-    user_content = INSTRUCTION + text
-    return {
-        "messages": [
-            {
-                "role": "system",
-                "content": "You are a financial sentiment classifier.",
-            },
-            {"role": "user", "content": user_content},
-            {"role": "assistant", "content": label},
-        ]
-    }
+    """One (text, label) row -> a chat-messages dict (adds the assistant label turn)."""
+    return {"messages": build_chat_messages(text) + [{"role": "assistant", "content": label}]}
 
 
 def write_jsonl(rows: list[dict], path: Path) -> None:

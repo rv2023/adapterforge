@@ -18,7 +18,6 @@ from scipy.stats import ks_2samp
 
 from baseline import load_data, split_data
 
-MODEL_NAME = "fpb-sentiment"
 REGIME_CSV = Path(__file__).resolve().parent / "regime_headlines.csv"
 PSI_THRESHOLD = 0.2
 

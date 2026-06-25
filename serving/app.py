@@ -71,10 +71,7 @@ def build_lora_predictor(name: str, version: str):
     model, tokenizer = eval_adapter.load_model_and_tokenizer(adapter_dir=local_dir)
 
     def predict_fn(text: str):
-        messages = [
-            {"role": "system", "content": "You are a financial sentiment classifier."},
-            {"role": "user", "content": instruction_format.INSTRUCTION + text},
-        ]
+        messages = instruction_format.build_chat_messages(text)
         with eval_adapter.torch.inference_mode():
             label = eval_adapter.predict_one(model, tokenizer, messages)
         return label, None
@@ -85,11 +82,12 @@ def build_lora_predictor(name: str, version: str):
 def build_distilbert_predictor(name: str, version: str):
     """Load the DistilBERT student version; return predict_fn(text) -> (label, confidence).
 
-    Reuse eval_student.predict (+ eval_student.LABELS). Runs on CPU — this is the
-    path you can smoke-test locally.
+    Inline forward -> softmax -> argmax (emits real confidence for the M8 cascade).
+    Runs on CPU — this is the path you can smoke-test locally.
     """
-    from pipelines import eval_student
     from transformers import AutoModelForSequenceClassification, AutoTokenizer
+
+    from pipelines.eval_student import LABELS
 
     local_dir = download_version_artifacts(name, version)
     tokenizer = AutoTokenizer.from_pretrained(local_dir)
@@ -111,7 +109,7 @@ def build_distilbert_predictor(name: str, version: str):
         with torch.inference_mode():
             probs = torch.softmax(model(**batch).logits, dim=-1)[0]
         confidence, pred_id = probs.max(dim=-1)
-        return eval_student.LABELS[int(pred_id)], float(confidence)
+        return LABELS[int(pred_id)], float(confidence)
 
     return predict_fn
 

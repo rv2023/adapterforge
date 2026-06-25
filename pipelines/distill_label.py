@@ -43,12 +43,9 @@ def label_token_ids(tokenizer) -> tuple[str, list[int]]:
       - assert all 3 ids are DISTINCT (print them once to eyeball);
       - return them in LABELS order.
     """
-    from pipelines.instruction_format import INSTRUCTION
+    from pipelines.instruction_format import build_chat_messages
 
-    messages = [
-        {"role": "system", "content": "You are a financial sentiment classifier."},
-        {"role": "user", "content": INSTRUCTION + "Acme reported stable revenue."},
-    ]
+    messages = build_chat_messages("Acme reported stable revenue.")
     # SINGLE-RENDER approach: tokenize (prompt_text + label) for each label in ONE pass.
     # Avoids cross-render boundary mismatches (BPE merges differently between the
     # generation-prompt render and the full-conversation render).
@@ -105,14 +102,11 @@ def soft_label_batch(
     """
     import torch
 
-    from pipelines.instruction_format import INSTRUCTION
+    from pipelines.instruction_format import build_chat_messages
 
     prompts = [
         tokenizer.apply_chat_template(
-            [
-                {"role": "system", "content": "You are a financial sentiment classifier."},
-                {"role": "user", "content": INSTRUCTION + text},
-            ],
+            build_chat_messages(text),
             add_generation_prompt=True,
             tokenize=False,
         )
