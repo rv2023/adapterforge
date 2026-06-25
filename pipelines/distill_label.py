@@ -140,7 +140,8 @@ def main() -> None:
     try:
         from tqdm.auto import tqdm
     except ImportError:
-        tqdm = lambda x, **_: x
+        def tqdm(x, **_):  # no-op fallback when tqdm isn't installed
+            return x
 
     total_batches = (len(texts) + BATCH_SIZE - 1) // BATCH_SIZE
     with out.open("w", encoding="utf-8") as f:
