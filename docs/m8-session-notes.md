@@ -74,6 +74,11 @@ hot-swap/KServe.
 - run_loop() unchanged. **Debt 1 architecture complete**; the loop is no longer a dead
   sklearn no-op.
 
-**M8 remaining:** detect_drift_evidently swap (1 line, closes Debt 2) · 2nd LoRA adapter
-(summarization, ECTSum — GPU) · hot-swap + KServe (cluster/GPU) · CRD/operator stretch ·
-polish (arch diagram, README JD-map, demo).
+**Debt 2 FULLY CLOSED** (2026-06-25): `detect_drift_evidently` swapped to
+`reference_analyzer_vocab()` too → 0 `sklearn.load_model` in drift.py; both functions run
+model-agnostic (psi 16.7; Evidently report written). Drift is now entirely decoupled from
+the served model.
+
+**M8 remaining:** 2nd LoRA adapter (summarization, ECTSum — GPU) · hot-swap + KServe
+(cluster/GPU) · CRD/operator stretch (free, kind) · polish (arch diagram, README JD-map,
+demo). Free/local M8 core (router + both debts) is DONE.

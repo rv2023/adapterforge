@@ -97,10 +97,7 @@ def detect_drift_evidently() -> None:
     from evidently import DataDefinition, Dataset, Report
     from evidently.presets import DataDriftPreset
 
-    model = mlflow.sklearn.load_model(f"models:/{MODEL_NAME}@production")
-    vectorizer = model.named_steps["tfidf"]
-    analyzer = vectorizer.build_analyzer()
-    vocab = set(vectorizer.vocabulary_)
+    analyzer, vocab = reference_analyzer_vocab()
 
     _, _, test_df = split_data(load_data())
     regime_df = pd.read_csv(REGIME_CSV)
