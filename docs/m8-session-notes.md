@@ -74,6 +74,15 @@ hot-swap/KServe.
 - run_loop() unchanged. **Debt 1 architecture complete**; the loop is no longer a dead
   sklearn no-op.
 
+**Decision (2026-06-25): SKIP the kopf operator / AdapterDeployment CRD** → deferred-
+backlog. Rationale: in this project it's not a functional need — the router + M8 hot-swap +
+vLLM multi-LoRA already cover multi-adapter serving + rerouting; the operator would only
+re-express that as a CRD. Its value here is purely the JD "operators/CRDs" checkbox +
+resume signal → optional stretch, not core. Core remaining = the GPU finale (2nd adapter +
+KServe). Also did: hygiene cleanup (prompt-contract dedup, dead-code, ruff-clean repo),
+README skeleton (Karthik filled prose; 3 built-vs-designed tweaks pending), MLflow UI moved
+to :5555 (was clashing with Marquez API :5000).
+
 **Debt 2 FULLY CLOSED** (2026-06-25): `detect_drift_evidently` swapped to
 `reference_analyzer_vocab()` too → 0 `sklearn.load_model` in drift.py; both functions run
 model-agnostic (psi 16.7; Evidently report written). Drift is now entirely decoupled from

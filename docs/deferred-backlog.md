@@ -20,6 +20,15 @@ Tracked here so they're not lost. None block the JD-mapping core; pick up when c
 | **SLO dashboard** | concept KNOWN | Grafana panel + PromQL for >98% pipeline success-rate (on kube-prometheus-stack, free on kind) |
 | MIG + time-slicing (carried from M6) | concept KNOWN | needs GPU (see M6 row) |
 
+## M8 — Capstone
+| Item | State | To finish |
+|---|---|---|
+| **2nd LoRA adapter** (summarization, ECTSum) | not started | one GPU session (RunPod) → fills the `summarizer` router backend → real task routing |
+| **Hot-swap + KServe deploy** | router/hot-swap logic exists; KServe deploy not done | paid EKS+GPU session — canary/traffic-shift = zero-downtime |
+| **`AdapterDeployment` CRD + kopf operator** | **skipped (stretch)** | free (kind) — *not a functional need* (router+hot-swap+vLLM-multiLoRA already cover serving); purely the JD "operators/CRDs" box + resume signal. Build only if you want that checkbox. |
+| README JD-bullet tweaks (#1–3 built-vs-designed) | drafted | tighten "deployment paths" / mark RCA+SLO "designed" / resize "scaffolded" (rule 5) |
+| Threshold-tuning experiment (escalate cascade) | not done | escalation-rate vs accuracy on the frozen eval set → pick THRESHOLD |
+
 ## Long-open (rule 5 — Karthik's words)
 | Item | State |
 |---|---|
