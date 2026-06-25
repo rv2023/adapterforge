@@ -19,3 +19,9 @@ variable "kube_prometheus_stack_version" {
   type        = string
   default     = null
 }
+
+variable "kueue_version" {
+  description = "Kueue chart version (OCI => must be explicit). Latest at scaffold time: 0.18.1."
+  type        = string
+  default     = "0.18.1"
+}
