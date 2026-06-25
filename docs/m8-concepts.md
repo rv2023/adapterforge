@@ -143,3 +143,40 @@ Routing is **unit-testable** with mock backends (no models needed).
 4. **Hot-swap + KServe** on the cluster (paid EKS+GPU) — canary/traffic-shift = zero-downtime.
 5. Stretch: `AdapterDeployment` CRD + kopf operator (free, kind).
 6. Polish: arch diagram, README JD-map, demo video.
+
+---
+
+## 8. Drift in the platform — data vs concept, per-task, model-agnostic
+
+**Drift is a property of the DATA, not the model.** OOV/PSI measures whether the incoming
+text distribution shifted from training — independent of which model serves it. So the
+M8 fix (debt 2) decouples the drift reference from the served model: build it from the
+**training corpus**, not the production model's internals (`reference_analyzer_vocab()`).
+Pulling it from the sklearn model's tfidf was a fragile shortcut that breaks once
+production is the LLM.
+
+**Per input-stream / task, NOT per model.** Models sharing the same input + task share ONE
+drift check:
+| Task | Input | Reference | Covers |
+|---|---|---|---|
+| sentiment | headlines | FPB train text (`reference_analyzer_vocab()`) | **both** the LLM adapter + the student |
+| summarization | earnings transcripts | ECTSum train (its OWN reference) | the summarizer adapter |
+→ refinement for later: **parametrize `reference_analyzer_vocab(task)`** by task when the
+summarizer lands. On drift, retrain the **production model for that task**; the **student**
+is refreshed downstream (re-distill from the updated teacher). The router doesn't change.
+
+**Two kinds of drift:**
+| | Data / input drift | Concept drift |
+|---|---|---|
+| What changes | **P(X)** — inputs look different (new vocab/regime) | **P(y\|X)** — same input, **different correct label** |
+| Example | new hawkish/QT/crypto vocabulary floods in | "Fed raises rates" flips bearish→bullish across regimes |
+| Detect | **unsupervised** (OOV/PSI on X) ← what we built | needs **true labels** — accuracy decay on delayed labels |
+| Visible from X alone? | yes | **no** (X looks identical; only labels reveal it) |
+
+The OOV sensor catches **data drift** (free, unsupervised). **Concept drift** needs a
+feedback loop — **delayed-label accuracy** (PLAN: "delayed-label accuracy ≥ promotion − 2
+pts → retrain"); a weak unsupervised proxy is prediction-distribution/confidence shift.
+Named for completeness; the feedback loop isn't simulated yet.
+
+One-liner: *data drift = inputs look different (catch from X, unsupervised); concept drift
+= same inputs now mean something different (catch only via labels / accuracy decay).*

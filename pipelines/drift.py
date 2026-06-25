@@ -26,6 +26,21 @@ _DB = Path(__file__).resolve().parent.parent / "mlflow.db"
 mlflow.set_tracking_uri(f"sqlite:///{_DB}")
 
 
+def reference_analyzer_vocab():
+    """Build the drift reference (analyzer, vocab) from TRAINING DATA — model-agnostic.
+
+    WAS: the OOV reference came from the production sklearn model's tfidf
+    (`model.named_steps["tfidf"]`), which breaks the moment production is the LLM (not an
+    sklearn model). The drift signal must NOT depend on what's in production — derive it
+    from the training corpus, so it works regardless of the served model_kind.
+    """
+    from sklearn.feature_extraction.text import CountVectorizer
+
+    train_df, _, _ = split_data(load_data())
+    vec = CountVectorizer().fit(train_df["text"])
+    return vec.build_analyzer(), set(vec.vocabulary_)
+
+
 def oov_rate(headline: str, analyzer, vocab: set) -> float:
     """Fraction of a headline's tokens NOT in the TF-IDF vocabulary.
 
@@ -55,11 +70,7 @@ def psi(reference: list[float], current: list[float], bins: int = 10) -> float:
 
 def detect_drift() -> None:
     """Compute OOV distributions (reference vs regime), run PSI + KS, print the verdict."""
-    # load the production model and pull its fitted TF-IDF out of the pipeline
-    model = mlflow.sklearn.load_model(f"models:/{MODEL_NAME}@production")
-    vectorizer = model.named_steps["tfidf"]
-    analyzer = vectorizer.build_analyzer()
-    vocab = set(vectorizer.vocabulary_)
+    analyzer, vocab = reference_analyzer_vocab()
 
     # REFERENCE = in-distribution (PhraseBank test set) ; CURRENT = regime fixture
     _, _, test_df = split_data(load_data())

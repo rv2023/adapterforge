@@ -33,3 +33,29 @@ build + unit-test routing logic locally (mock LLM, real student on CPU).
 
 **Loose ends:** git push (whole M6+M7+M8 stack local); deferred-backlog.md tracks pending
 M6/M7 items; AWS fully destroyed ($0).
+
+## Session 2 — 2026-06-25 (router built + tested; drift sensor decoupled)
+
+**Router DONE + tested** (`serving/router/`): `routing.route()` (summarize/accurate/cheap/
+escalate-cascade, ValueError on unknown task/tier), `backends.py` (mock LLM, real student,
+summarizer stub), thin FastAPI `app.py`. **`serving/app.py` distilbert predictor now emits
+softmax confidence** (cascade enabler; was None). **9 routing unit tests** (mock backends,
+all paths, 0.09s) in `serving/tests/test_routing.py`; `make test` now includes serving.
+
+**Debt 2 — drift sensor decoupled (model-agnostic):** `drift.reference_analyzer_vocab()`
+builds (analyzer, vocab) from TRAIN text via CountVectorizer — no served-model load.
+`detect_drift()` + `loop.drift_detected()` switched to it. **Verified:** `detect_drift()`
+→ psi=16.7153, DRIFT yes (matches M4 ~16.7), now model-agnostic. **REMAINING:**
+`detect_drift_evidently()` still loads sklearn@production (line ~100) — apply the same
+`analyzer, vocab = reference_analyzer_vocab()` swap to fully clear Debt 2.
+
+**Drift learnings (concepts §8):** drift = a DATA property not a model property → per
+input-stream/TASK, not per model (sentiment LLM+student share one reference; summarizer
+gets its own ECTSum reference → parametrize `reference_analyzer_vocab(task)` later).
+**Data drift** (P(X), unsupervised, OOV/PSI — what we built) vs **concept drift** (P(y|X),
+same input/different correct label, needs delayed-label accuracy — named, not simulated).
+
+**Next:** finish detect_drift_evidently swap → **Debt 1 (model-aware retraining)** =
+design-heavy: `loop.retrain_and_register()` must produce an **LLM adapter** (dispatch the
+GPU QLoRA pipeline keyed on model_kind) instead of inline sklearn. Then 2nd adapter (GPU),
+hot-swap/KServe.

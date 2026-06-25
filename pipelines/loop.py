@@ -17,7 +17,7 @@ import pandas as pd
 import requests
 
 from baseline import build_model, load_data, split_data
-from drift import PSI_THRESHOLD, REGIME_CSV, oov_rate, psi
+from drift import PSI_THRESHOLD, REGIME_CSV, oov_rate, psi, reference_analyzer_vocab
 from register_baseline import BEST_C, MODEL_NAME, register_sklearn
 
 CONTROL_PLANE = "http://127.0.0.1:8000"
@@ -27,10 +27,7 @@ mlflow.set_tracking_uri(f"sqlite:///{_DB}")
 
 def drift_detected() -> bool:
     """OOV/PSI drift check on the regime batch vs the in-distribution reference."""
-    model = mlflow.sklearn.load_model(f"models:/{MODEL_NAME}@production")
-    vectorizer = model.named_steps["tfidf"]
-    analyzer = vectorizer.build_analyzer()
-    vocab = set(vectorizer.vocabulary_)
+    analyzer, vocab = reference_analyzer_vocab()
     _, _, test_df = split_data(load_data())
     regime_df = pd.read_csv(REGIME_CSV)
     reference_oov = [oov_rate(t, analyzer, vocab) for t in test_df["text"]]

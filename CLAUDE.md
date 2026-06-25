@@ -136,7 +136,14 @@ build only after M8 so the core stays mapped to the MLOps-platform JD.)
 
 ## Current state (update this section as we go)
 
-- Active milestone: **M8 (Capstone — multi-adapter routing).** Kickoff pending.
+- Active milestone: **M8 (Capstone — multi-adapter routing).** Router DONE (`serving/
+  router/`: task/cost routing + **escalate cascade**; 9 unit tests; student now emits
+  softmax confidence). **Debt 2 (model-agnostic drift) done** for detect_drift+loop
+  (`drift.reference_analyzer_vocab()`; psi 16.7 reproduced) — `detect_drift_evidently`
+  swap pending. Drift learnings in `docs/m8-concepts.md` §8 (data-vs-concept, per-task).
+  **Next: Debt 1** (model-aware retraining → dispatch GPU QLoRA, not inline sklearn),
+  then 2nd adapter (GPU), hot-swap/KServe. Design+log: `docs/m8-concepts.md`,
+  `docs/m8-session-notes.md`. Kickoff detail:
   Deferred/pending M6+M7 tasks consolidated in **`docs/deferred-backlog.md`** (MIG/
   time-slicing [need GPU], in-place resize [scaffolded, run on kind], RCA bot [designed,
   build on kind], SLO dashboard, M6 write-up personalization, M1 README). AWS fully
