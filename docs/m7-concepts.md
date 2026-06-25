@@ -28,7 +28,7 @@ paid EKS+GPU session → `destroy`.
 | Modules | community `terraform-aws-modules/{vpc,eks}` | standard, far less boilerplate than raw resources |
 | Node groups | system (t3.medium, always on) + **GPU (g5.xlarge)** | keep system pods off the expensive node |
 | **GPU cost lever** | GPU node group **`desired_size=0`** | **$0 GPU between sessions**; scale to 1 only when testing |
-| GPU AMI | **base AL2023** (not prebaked GPU AMI) | so you *watch* the GPU Operator install driver/toolkit/device-plugin/DCGM |
+| GPU AMI | **REVISED → `AL2023_x86_64_NVIDIA`** (prebaked driver) + Operator `driver.enabled=false` — see §7 | base-AL2023 + Operator-driver fails on Amazon Linux; prebaked driver is the reliable EKS path |
 | GPU pricing | on-demand | spot reclaim mid-MIG-lab is maddening for short labs |
 | Sharing | `single_nat_gateway=true` | one NAT, not one-per-AZ (lab cost) |
 | State | local (move to S3 later) | simplest; clean apply/destroy per session |
@@ -173,3 +173,57 @@ for rare adapters, and **canary/traffic-split = the zero-downtime adapter hot-sw
 
 One-liner: *declare an `InferenceService`; KServe runs your model on an engine like
 Triton/vLLM with autoscaling, scale-to-zero, and canary, speaking the v2 protocol.*
+
+---
+
+## 7. Provisioning a GPU node: the software stack + GPU Operator vs AMI vs device-plugin
+
+### The stack a GPU node needs
+For a pod to *use* a GPU on K8s, the node needs, bottom to top:
+
+| Layer | Does what | Missing → |
+|---|---|---|
+| 1. NVIDIA **driver** | kernel software so the OS talks to the GPU | GPU is a brick |
+| 2. container **runtime/toolkit** | lets *containers* reach the GPU | pod can't see GPU |
+| 3. **device plugin** | tells K8s "node has N GPUs" (exposes `nvidia.com/gpu`) | scheduler blind to GPUs |
+| 4. **DCGM exporter** | GPU metrics → Prometheus | no Piece 4 |
+| 5. **MIG-manager** | creates/manages MIG partitions | no Piece 3 |
+
+1–2 = make the GPU work on the node; 3 = make K8s aware; 4–5 = monitor + slice.
+
+### Two suppliers
+- **The AMI** (node disk image): AWS's **GPU-optimized AMI** ships layers **1–2 prebaked**
+  (driver + runtime). This is the AWS-documented "default" path.
+- **The GPU Operator** (NVIDIA): installs/manages **all 5** and keeps them updated; can
+  skip layers — `driver.enabled=false` = "AMI already did the driver."
+- **Bare device plugin** (a DaemonSet): only layer 3; assumes AMI gave 1–2; **no DCGM/MIG**.
+
+### Three options (who supplies what)
+| Layer | Opt 1: AMI + device-plugin | **Opt 2: GPU-AMI + Operator (driver off)** | Opt 3: Ubuntu + Operator (all) |
+|---|---|---|---|
+| driver / runtime | AMI | **AMI** | Operator |
+| device-plugin | you | Operator | Operator |
+| DCGM / MIG | ❌ none | ✅ Operator | ✅ Operator |
+| effort | simplest | reliable, medium | most (CUSTOM AMI) |
+
+- **Opt 1** = simplest, pure GPU scheduling, but **no DCGM/MIG** → doesn't satisfy M7.
+- **Opt 2 (CHOSEN)** = AWS GPU AMI supplies the driver (reliable, tested), Operator supplies
+  device-plugin + **DCGM** + **MIG** — the typical EKS pattern *and* everything M7 needs.
+- **Opt 3** = Operator manages the driver too → needs **Ubuntu** (the Operator's
+  driver-container supports Ubuntu/RHEL, **not Amazon Linux**) via an EKS **CUSTOM** AMI
+  (look up Canonical AMI + launch-template bootstrap) → more Terraform. The **on-prem /
+  large-fleet** pattern (driver-as-container = fleet-wide driver lifecycle).
+
+### Industry practice
+- **Managed cloud (EKS/GKE/AKS):** prebaked-driver node image + Operator/device-plugin for
+  the rest — i.e. **Opt 2**. Teams don't compile kernel modules on cloud nodes.
+- **On-prem / bare-metal / big fleets:** Operator manages the **full** stack incl. drivers
+  (Ubuntu/RHEL) for centralized driver lifecycle/upgrades — i.e. Opt 3.
+- Interview line: *"On EKS I used the prebaked-driver AMI with the Operator managing
+  device-plugin/DCGM/MIG; on-prem I'd let the Operator manage drivers too, for fleet-wide
+  driver lifecycle."*
+
+### Decision (2026-06-25): **Opt 2**
+GPU node `ami_type = AL2023_x86_64_NVIDIA` (driver+runtime prebaked) + GPU Operator
+`--set driver.enabled=false` (device-plugin + DCGM + MIG-manager + NFD). Reliable +
+representative + covers Pieces 3 & 4.
