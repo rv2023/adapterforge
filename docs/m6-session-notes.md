@@ -228,5 +228,23 @@ selection-note "when I'd pick each" (Piece 2); m6-mig-results.md (after Piece 3)
 
 **Next:** rent A100 → walk runpod-m6-mig-dcgm.md (verify MIG first!).
 
+## Session 9 — 2026-06-25 (MIG gate FAILED → defer P3+P4 to M7)
+
+Rented A100 80GB PCIe (driver 570/CUDA 12.8). **Gate failed:** `nvidia-smi -mig 1` →
+**"Insufficient Permissions"** — RunPod doesn't grant host-level MIG control in a
+standard pod (MIG mode stuck Disabled). As planned, **bailed**.
+
+**Decision:** do **MIG (Piece 3) AND DCGM (Piece 4) in M7** (own EKS cluster, GPU
+Operator → full host control; M7 already scopes GPU Operator + time-slicing ConfigMap +
+kube-prometheus-stack + DCGM). Skipped the RunPod salvage too. **A100 terminated.**
+
+**M6 effectively complete:** Pieces 0 (model-aware serving), 1 (vLLM benchmark — 27×
+throughput), 2 (Triton/ONNX) DONE; write-ups drafted. Pieces 3+4 carried into M7.
+The local scaffolds stay useful: `observability/m6-dcgm/` (DCGM+Prometheus compose) and
+`docs/runpod-m6-mig-dcgm.md` (runbook) inform the M7 setup.
+
+**Open writing TODOs (Karthik, rule 5):** personalize the drafted "why vLLM wins" +
+selection note into his own voice (interview prep).
+
 **Open / deferred:** loop.py model-aware retraining + drift sensor → M8. MPS hands-on
 optional. M1 SDK README + RoCE/IB explainer still open (rule 5).

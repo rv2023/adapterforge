@@ -136,7 +136,10 @@ build only after M8 so the core stays mapped to the MLOps-platform JD.)
 
 ## Current state (update this section as we go)
 
-- Active milestone: **M6 IN PROGRESS (Serving + GPU sharing).** Kickoff done
+- Active milestone: **M6 NEARLY COMPLETE (Serving + GPU sharing)** — Pieces 0 (model-aware
+  serving), 1 (vLLM benchmark, 27× throughput), 2 (Triton/ONNX) DONE; **MIG (P3) + DCGM
+  (P4) deferred to M7** (RunPod blocked host-level MIG: "Insufficient Permissions"; own
+  EKS+GPU Operator gives control). Write-ups drafted (Karthik to personalize). Kickoff done
   (2026-06-22): concepts taught + saved (`docs/m6-serving-concepts.md` — vLLM
   autoregression/prefill-decode/KV-cache, continuous batching, PagedAttention,
   time-slicing/MPS/MIG + the two-layer "sharing vs vLLM" model, dispatch-vs-router).

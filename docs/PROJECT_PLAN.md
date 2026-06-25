@@ -198,6 +198,13 @@ Build:
   report. Inject 3 failure types; measure time-to-classified-cause (**target <10 min**)
 - Define the **>98% pipeline success-rate SLO** and put it on a dashboard
 
+> **Carried in from M6 (2026-06-25):** the **MIG lab** (Piece 3) + **DCGM→Prometheus**
+> (Piece 4) were deferred here — RunPod refused host-level MIG control ("Insufficient
+> Permissions"), which the GPU Operator on our own EKS cluster gives us. Do the full MIG
+> hands-on (enable MIG, 2 isolated instances LLM+student, OOM-isolation demo) + the
+> time-slicing crash demo here, with DCGM per-instance metrics. Local scaffolds to reuse:
+> `observability/m6-dcgm/` (DCGM+Prometheus compose) and `docs/runpod-m6-mig-dcgm.md`.
+
 **Expected outcome:** A Terraform-provisioned GPU Kubernetes platform with
 queueing, sharing, dashboards, alerting, sub-minute resizing, and automated RCA
 that you've tested against injected failures — with numbers to quote.
