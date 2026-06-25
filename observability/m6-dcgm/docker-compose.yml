@@ -1,0 +1,25 @@
+# M6 Piece 4 — DCGM exporter -> Prometheus, to graph GPU memory/SM util during serving.
+#
+#   docker compose -f observability/m6-dcgm/docker-compose.yml up
+#   # dcgm metrics:  curl localhost:9400/metrics | grep DCGM_FI_DEV_FB_USED
+#   # prometheus UI: http://localhost:9090   (query DCGM_FI_DEV_FB_USED, DCGM_FI_DEV_GPU_UTIL)
+#
+# GPU-access caveat: dcgm-exporter needs the NVIDIA container runtime. On a bare GPU host
+# this "just works". On a RunPod pod (already a container) nested docker may NOT expose the
+# GPU — fallback is to run the exporter binary on the host pod:
+#   dcgm-exporter &        # if the image's DCGM libs are present, or apt-get install datacenter-gpu-manager
+# and point prometheus.yml at localhost:9400.
+services:
+  dcgm-exporter:
+    image: nvcr.io/nvidia/k8s/dcgm-exporter:3.3.5-3.4.1-ubuntu22.04
+    runtime: nvidia            # requires nvidia-container-toolkit on the host
+    cap_add: ["SYS_ADMIN"]
+    ports: ["9400:9400"]
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports: ["9090:9090"]
+    restart: unless-stopped

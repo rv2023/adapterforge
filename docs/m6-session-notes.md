@@ -206,5 +206,27 @@ TGI/TorchServe/DeepSpeed — when to pick each). Then Piece 2 closed.
 
 **Next pieces:** Piece 4 (DCGM→Prometheus), Piece 3 (A100 MIG lab — the big one).
 
+## Session 8 — 2026-06-24 (Pieces 3+4 PREP — local/free)
+
+Decided: run **Piece 3 (MIG) + Piece 4 (DCGM) in ONE A100 session** — DCGM showing
+per-MIG-instance metrics IS the isolation demo (efficient, ~$4–6). Prepped everything
+locally so the GPU session is mechanical:
+- **DCGM concept taught** (concepts §8/§10): dcgm-exporter publishes GPU telemetry in
+  Prometheus format (port 9400); key metrics `DCGM_FI_DEV_FB_USED` (VRAM, = the
+  KV-cache-growth graph skipped in Piece 1) + `DCGM_FI_DEV_GPU_UTIL` (SM util).
+- **`observability/m6-dcgm/`**: docker-compose (dcgm-exporter + prometheus) +
+  prometheus.yml (1s scrape). Caveat noted: nested docker GPU on RunPod may not expose
+  the GPU → fallback to host dcgm-exporter.
+- **`docs/runpod-m6-mig-dcgm.md`**: combined runbook. **GATED on `nvidia-smi -mig 1`
+  working first** — MIG is host-level/privileged; if RunPod blocks it, bail (minimal
+  spend) and do MIG hands-on in M7 (EKS + GPU Operator). Steps: enable MIG → 2×3g.40gb
+  instances → LLM on MIG-0 (vLLM) + student on MIG-1 (Triton) → DCGM per-instance →
+  OOM-isolation demo → disable MIG → time-slicing crash demo → capture → teardown.
+
+**Open writing TODOs (Karthik, rule 5):** "why vLLM wins" para (Piece 1);
+selection-note "when I'd pick each" (Piece 2); m6-mig-results.md (after Piece 3).
+
+**Next:** rent A100 → walk runpod-m6-mig-dcgm.md (verify MIG first!).
+
 **Open / deferred:** loop.py model-aware retraining + drift sensor → M8. MPS hands-on
 optional. M1 SDK README + RoCE/IB explainer still open (rule 5).

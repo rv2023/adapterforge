@@ -1,0 +1,12 @@
+# M6 Piece 4 — Prometheus config: scrape the DCGM exporter for GPU metrics.
+# 1s interval so we capture fast changes (e.g. KV-cache VRAM growth) during a benchmark.
+global:
+  scrape_interval: 1s
+  evaluation_interval: 1s
+
+scrape_configs:
+  - job_name: "dcgm"
+    static_configs:
+      # docker-compose service name (compose network). If running dcgm-exporter on the
+      # host instead, use ["localhost:9400"] and run prometheus with --network=host.
+      - targets: ["dcgm-exporter:9400"]
