@@ -211,8 +211,16 @@ elegantly via `model.disable_adapter()` on the same loaded PeftModel. Writes
 **Pipeline:** `summarize_format` (data ✅ verified) → `finetune` (AF_DATA_DIR/AF_ADAPTER_DIR,
 GPU) → `eval_summarizer` (GPU) → register as `fpb-summarizer` + wire router `build_summarizer`.
 
-**⚠️ Open design — the sentiment-pinned gate:** the control-plane promotion gate checks
-`eval_set_hash == EXPECTED_HASH` (the *sentiment* frozen test set) + an F1 margin. The
-summarizer's eval set (ECTSum) + metric (ROUGE-L) differ → it **can't pass the same gate**.
-Promoting `fpb-summarizer` needs a **task-aware gate** (its own expected hash + metric) or a
-separate path. Design before the register step.
+**✅ Task-aware promotion gate (implemented).** The gate was sentiment-pinned (global
+`EXPECTED_HASH`/`EXPECTED_SCHEMA`/`MODEL_NAME`, and it *ignored* the `{name}` path param —
+a latent bug). Now `control-plane/app.py` has a per-model **`GATE_CONFIG`** keyed by name:
+each model carries its own `expected_hash`, `expected_schema`, `margin`, `floor`, and a
+`metric_label` ("F1" / "ROUGE-L") for readable rejections. `promote(name, …)` looks up
+`GATE_CONFIG[name]` (404 if unknown) and threads `name` through `get_dossier`/
+`get_production_version`/`set_registered_model_alias` — so **each model is gated against its
+OWN frozen exam + its OWN incumbent** (F1-vs-F1, ROUGE-vs-ROUGE never cross). The summarizer
+hash is deferred via **`os.getenv("FPB_SUMMARIZER_EXPECTED_HASH")`** and **fail-closed** if
+unset (reject "expected hash not configured"). To promote `fpb-summarizer`: register it
+(→ ECTSum test-set hash), then set that env var (or hardcode) before starting the control
+plane. This was the **last sentiment-pinned piece** — gate, drift sensor, and retraining
+are all now task/model-aware.

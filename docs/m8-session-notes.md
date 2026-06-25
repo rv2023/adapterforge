@@ -111,3 +111,19 @@ gate is sentiment-pinned: EXPECTED_HASH + F1). Then wire router `build_summarize
 **M8 remaining:** 2nd LoRA adapter (summarization, ECTSum — GPU) · hot-swap + KServe
 (cluster/GPU) · CRD/operator stretch (free, kind) · polish (arch diagram, README JD-map,
 demo). Free/local M8 core (router + both debts) is DONE.
+
+## Session 5 — 2026-06-25 (task-aware promotion gate IMPLEMENTED)
+
+`control-plane/app.py` now task-aware (was sentiment-pinned + ignored the `{name}` path
+param — latent bug). **`GATE_CONFIG`** keyed by model name: per-model `expected_hash`,
+`expected_schema`, `margin`, `floor`, `metric_label`. `promote(name,…)` looks up
+`GATE_CONFIG[name]` (404 if unknown) and threads `name` through get_dossier/
+get_production_version/set_alias → each model gated vs its OWN exam + OWN incumbent
+(F1-vs-F1, ROUGE-vs-ROUGE never cross). Summarizer hash deferred via
+`os.getenv("FPB_SUMMARIZER_EXPECTED_HASH")`, **fail-closed** if unset. ruff clean, parses.
+**Last sentiment-pinned piece closed** — gate + drift sensor + retraining all task/model-aware.
+
+**Remaining for the summarizer to go live:** write `register_summarizer` (mirror
+register_student → register under `fpb-summarizer`, score on ECTSum test → its hash) → set
+`FPB_SUMMARIZER_EXPECTED_HASH` → GPU run (format→finetune→eval→register→promote) → wire
+`backends.build_summarizer` to the real adapter.
