@@ -23,7 +23,10 @@ Tracked here so they're not lost. None block the JD-mapping core; pick up when c
 ## M8 — Capstone
 | Item | State | To finish |
 |---|---|---|
-| **2nd LoRA adapter** (summarization, ECTSum) | not started | one GPU session (RunPod) → fills the `summarizer` router backend → real task routing |
+| **2nd LoRA adapter** (summarization, ECTSum) | **TRAINED + PROMOTED to production** (ROUGE-L 0.1330 > base 0.1015; fpb-summarizer v1, hash f55821…) | DONE through the gate. Remaining: wire `backends.build_summarizer` (Option A — real loader, below). |
+| **Wire `build_summarizer` (Option A)** | DESIGN locked; Karthik to implement (tutor) | add `build_summary_predictor(name,version)` in `serving/app.py` (reuse `eval_adapter.load_model_and_tokenizer` + `eval_summarizer.generate_summary`, return `(summary, None)`, use `summarize_format.build_chat_messages`); router `build_summarizer` → delegates to it for `fpb-summarizer` v1. Slow on CPU; prod → vLLM HTTP. |
+| **Batch the summarizer eval** | not done (current eval = 990 *sequential* greedy gens, ~80 min, GPU util ~25%) | `eval_summarizer` generates one transcript at a time — the M6 "naive" path. Fix: **HF batched generate** (left-pad tokenizer, 16–32 prompts/batch) → util ~70%+, ~10–15 min. vLLM (`--enable-lora`+`LoRARequest`) optional/heavier (env setup + 2 passes for the `disable_adapter` base). Good JD talking point: naive-vs-batched measured on our own eval. |
+| ~~Summarizer adapter size (398 MiB)~~ **RESOLVED** | adapter is a normal **36 MiB** (392 LoRA tensors = 28 layers × 7 modules × A/B, r=16; no embed/lm_head). The 398 MiB was the *run dir* = two `checkpoint-*` resume snapshots (118 MB each: adapter copy + optimizer.pt + scheduler). Fix applied: `rm -rf models/fpb-summarizer/checkpoint-*` before register (so `log_artifacts` stays lean). |
 | **Hot-swap + KServe deploy** | router/hot-swap logic exists; KServe deploy not done | paid EKS+GPU session — canary/traffic-shift = zero-downtime |
 | **`AdapterDeployment` CRD + kopf operator** | **skipped (stretch)** | free (kind) — *not a functional need* (router+hot-swap+vLLM-multiLoRA already cover serving); purely the JD "operators/CRDs" box + resume signal. Build only if you want that checkbox. |
 | README JD-bullet tweaks (#1–3 built-vs-designed) | drafted | tighten "deployment paths" / mark RCA+SLO "designed" / resize "scaffolded" (rule 5) |

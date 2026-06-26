@@ -127,3 +127,96 @@ get_production_version/set_alias → each model gated vs its OWN exam + OWN incu
 register_student → register under `fpb-summarizer`, score on ECTSum test → its hash) → set
 `FPB_SUMMARIZER_EXPECTED_HASH` → GPU run (format→finetune→eval→register→promote) → wire
 `backends.build_summarizer` to the real adapter.
+
+## Session 6 — 2026-06-26 (register_summarizer done + summarizer GPU run)
+
+**register_summarizer implemented + reviewed** (commit 73eae73, ruff clean): blends
+register_adapter (LoRA artifact logging, model_kind=lora_adapter) + register_student (NEW
+name → create_registered_model first, swallowing only RESOURCE_ALREADY_EXISTS; MODEL_NAME
+monkeypatch w/ finally restore). Hash reproducibility hinges on `summarize_format` sorting
+filenames (it does) → printed `eval_set_hash` == the gate's tag.
+
+**Phase B — RunPod L4 (~$0.45/hr) summarizer training DONE.** Env-hell fixes (worth keeping):
+- Pod came with a working `torch 2.8.0+cu128` (driver CUDA 12.8). `pip install -r
+  requirements-gpu.txt` (unpinned transformers 5.12.1) **dragged in torch 2.12.1+cu130** →
+  `cuda False` ("driver too old") + `torchvision::nms does not exist` (torch≠torchvision).
+- **Fix:** reinstall the matching CUDA stack pinned to the driver:
+  `pip install torch==2.8.0 torchvision==0.23.0 torchaudio==2.8.0
+  --index-url https://download.pytorch.org/whl/cu128` → `cuda True`, transformers 5.12.1
+  imports clean (alignment fixed the nms crash — no need to downgrade transformers this time).
+- Lesson: on a RunPod PyTorch template, **never let an unpinned install replace torch**;
+  pin torch+vision+audio to the cu build matching the driver. Also `debian blinker` has no
+  RECORD → `--ignore-installed blinker` (but NOT with `--index-url`, which lacks blinker).
+- `summarize_format` → 1681/249/495 ✅. **Trained** Qwen2.5-1.5B 4-bit, BATCH_SIZE lowered
+  16→4 (long ECTSum transcripts OOM risk), 3 epochs / 1263 steps / ~68 min, loss ~2.0,
+  adapter saved (**398 MiB — unexpectedly large**; backlog: likely embed/lm_head saved).
+- **Eval bottleneck observed:** `eval_summarizer` = 990 *sequential* greedy generations
+  (495 × adapter+base), GPU util ~25%, ~80 min — literally the M6 "naive" path. Backlog:
+  HF batched generate (util ~70%+, ~10-15 min); vLLM `--enable-lora` optional/heavier.
+
+**Concept captured — "CPU 100% / GPU 25% / top says idle": how to read utilization.**
+All three readings were consistent + healthy, just measured against different denominators:
+- **`ps` per-process ~100%** = % of **one core**. The eval is **single-threaded** (a
+  sequential generate loop) → it pegs exactly one core, no more.
+- **`top` %Cpu(s) ~94% idle** = averaged across **all** vCPUs. Shared RunPod host had ~100
+  vCPUs → one busy core ≈ 1% of the box. Same fact, host-wide denominator. (`load avg ~6`
+  agrees: ~6 runnable threads on a ~100-vCPU box = near-idle.)
+- **`nvidia-smi` 25%** = GPU busy only 25% of wall-clock. Cause = **batch size 1**: text
+  gen is **autoregressive** (token N+1 needs N → strictly serial, can't parallelize one
+  sequence), so the GPU gets a teaspoon of work per token, finishes in µs, then **waits on
+  the CPU** to launch the next → starved, idle 75% of the time.
+- **Bottleneck = the serial one-at-a-time round-trip**, not raw CPU or GPU compute. CPU core
+  saturated by Python/launch overhead; GPU starved by tiny work units. (~158k round-trips =
+  495×2×~160 tokens.)
+- **Adding cores does NOT help**: one thread runs on one core at a time, and an
+  autoregressive sequence can't be split across cores. The fix is **GPU parallelism via
+  batching** (32 prompts/launch → GPU fills up + CPU launches amortized → both numbers
+  improve, ~5–30×). This is the M6 naive-vs-continuous-batching lesson, live.
+- **vCPU ≠ physical core**: 1 physical core w/ SMT = 2 vCPUs; `nproc`/`top` count vCPUs.
+  This pod: `nproc`=**128** vCPUs (~64 physical cores). Process ≈100% = ~1 vCPU of 128 →
+  1/128 ≈ 0.8% busy → `top` ~99% idle. All readings consistent.
+- **Proof it's single-threaded**: `ps %CPU` *can* exceed 100% for multithreaded procs
+  (8 cores → 800%). Ours pegged ~100% (not 200/800) = hard evidence it uses exactly one
+  core. Why it can't use the other 127: the Python gen loop holds the **GIL** (one bytecode
+  thread), and the math is on the **GPU** so extra CPU threads have nothing to do — the idle
+  cores aren't blocked, there's just **no parallel work** to give them.
+- **`torch.compile` red herring**: transformers 5.x spawned ~32 `_inductor/compile_worker`
+  procs at startup (compiled once, ~4s CPU total, then idle) — NOT recompiling per-shape
+  (verified via worker `time`≈0 over 90 min). Not the bottleneck.
+
+**⚠️ Before pod teardown:** `models/` is gitignored + register runs on the laptop (mlflow.db
+is there) → must `tar` + download `models/fpb-summarizer` first (M5 lesson: teacher was lost).
+
+**Eval RESULT + summarizer PROMOTED TO PRODUCTION (governance proof #2).**
+- `eval_summarizer` → **ROUGE-L adapter=0.1330 vs base zero-shot=0.1015, beat_bar=True** ✅
+  (modest absolute — transcripts truncated ~1024 tok + 3 epochs — but the JD bar was
+  "beat base zero-shot", met). `eval_metrics.json` written (test_f1=0.1330, n_test=495).
+- Pod→laptop transfer: `scp -P <port>` got **Connection refused** (RunPod pod had no direct
+  TCP SSH exposed) → used the working path; lesson: prefer `runpodctl send/receive` or the
+  Jupyter file browser over direct scp on RunPod.
+- Cleaned `checkpoint-*` (398 MB → ~47 MB), tar'd, downloaded, **terminated pod** (~$0.90 total).
+- `register_summarizer` → **fpb-summarizer v1** registered; printed
+  `eval_set_hash=f55821bc05e3f0bd9d06a56827c8961508a5e844b05e76a4eee2375f762fe94f`.
+- Promoted via the gate: `FPB_SUMMARIZER_EXPECTED_HASH=f55821… uvicorn app:app` →
+  `POST /models/fpb-summarizer/promote {version:1, approved_by:karthik}` → **promoted**.
+  `/production` confirms dossier: v1 · test_f1 0.1330 · hash f55821… · schema v1 ·
+  commit 73eae73 · model_kind lora_adapter.
+- **What this proves:** a SECOND, different task went train→eval→register→**gated promote**
+  with ZERO hand-editing of the gate — task-aware `GATE_CONFIG` scored it ROUGE-vs-ROUGE
+  against its OWN ECTSum exam, and the pinned hash matched the candidate tag bit-for-bit
+  (the whole point of pinning: no promotion on a non-canonical/leaked test set).
+
+**Phase D DESIGN LOCKED — wire the real summarizer backend (Option A, Karthik's call).**
+- Decision: serve the REAL adapter (not a mock like `build_llm_sentiment`). Slow on laptop
+  CPU but genuinely closes the loop; prod swaps to vLLM HTTP later (router unchanged).
+- Shape: add `build_summary_predictor(name, version)` in `serving/app.py` (sits beside
+  `build_lora_predictor`/`build_distilbert_predictor`; NOT in `PREDICTOR_BUILDERS` — it's a
+  task-specific generate loader, not a `model_kind` dispatch). It reuses
+  `eval_adapter.load_model_and_tokenizer` (load) + `eval_summarizer.generate_summary`
+  (generate), returns `predict_fn(text) -> (summary, None)`.
+- Router `backends.build_summarizer` just delegates → `build_summary_predictor("fpb-summarizer","1")`
+  (mirrors how `build_student` delegates to `serving.app`).
+- **Critical gotcha:** use `summarize_format.build_chat_messages` (the SUMMARIZER prompt
+  the adapter trained on), NOT `instruction_format` (sentiment) — a drifted prompt silently
+  tanks output. `confidence=None` (generation has no softmax max; cascade is classify-only).
+- **Status: Karthik to implement the two bodies (tutor rule); skeleton+TODOs handed over.**
