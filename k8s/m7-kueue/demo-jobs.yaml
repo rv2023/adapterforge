@@ -33,8 +33,52 @@ spec:
             requests:
               cpu: "400m" # e.g. 400m — sized vs the ClusterQueue quota to force queueing
               memory: "128Mi"
-# TODO: duplicate the above into sleeper-2 and sleeper-3 (same spec, different names) so
-#       you submit 3 jobs at once and watch the 3rd queue.
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: sleeper-2
+  namespace: default
+  labels:
+    kueue.x-k8s.io/queue-name: cpu-local # <- TODO: this label is REQUIRED on each job
+spec:
+  parallelism: 1
+  completions: 1
+  suspend: true # Kueue unsuspends on admission
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: sleep
+          image: busybox
+          command: ["sh", "-c", "sleep 120"]
+          resources:
+            requests:
+              cpu: "400m" # e.g. 400m — sized vs the ClusterQueue quota to force queueing
+              memory: "128Mi"
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: sleeper-3
+  namespace: default
+  labels:
+    kueue.x-k8s.io/queue-name: cpu-local # <- TODO: this label is REQUIRED on each job
+spec:
+  parallelism: 1
+  completions: 1
+  suspend: true # Kueue unsuspends on admission
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: sleep
+          image: busybox
+          command: ["sh", "-c", "sleep 120"]
+          resources:
+            requests:
+              cpu: "400m" # e.g. 400m — sized vs the ClusterQueue quota to force queueing
+              memory: "128Mi"
 ---
 # Gang job: 2 pods that must be admitted TOGETHER (all-or-nothing). With the quota nearly
 # full, this won't admit until enough frees for BOTH pods at once.
