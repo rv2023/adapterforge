@@ -79,6 +79,29 @@ def build_lora_predictor(name: str, version: str):
     return predict_fn
 
 
+def build_summary_predictor(name: str, version: str):
+    """Load the summarization LoRA adapter; return predict_fn(text) -> (summary, None).
+
+    Like build_lora_predictor, but the task is GENERATION: return the brief itself,
+    not a parsed label. Reuses the SAME building blocks you already wrote.
+
+    Lives here (not in PREDICTOR_BUILDERS) because it's a task-specific generate loader,
+    not a model_kind dispatch target.
+    """
+    from pipelines import eval_adapter, eval_summarizer, summarize_format
+
+    local_dir = download_version_artifacts(name, version)
+    model, tokenizer = eval_adapter.load_model_and_tokenizer(adapter_dir=local_dir)
+
+    def predict_fn(text: str):
+        messages = summarize_format.build_chat_messages(text)
+        with eval_adapter.torch.inference_mode():
+            summary = eval_summarizer.generate_summary(model, tokenizer, messages)
+        return summary, None
+
+    return predict_fn
+
+
 def build_distilbert_predictor(name: str, version: str):
     """Load the DistilBERT student version; return predict_fn(text) -> (label, confidence).
 

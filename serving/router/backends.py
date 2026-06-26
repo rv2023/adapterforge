@@ -32,11 +32,13 @@ def build_student():
 
 
 def build_summarizer():
-    """Stub until the 2nd LoRA adapter (summarization, ECTSum) is trained."""
-    def predict(text: str):
-        return ("summarizer not available (2nd adapter pending)", None)
+    """Real summarization LoRA adapter (slow on CPU locally; prod -> vLLM HTTP).
 
-    return predict
+    Delegates to serving.app, exactly like build_student delegates the distilbert load.
+    """
+    from serving.app import build_summary_predictor
+
+    return build_summary_predictor("fpb-summarizer", "1")
 
 
 def default_backends() -> dict:

@@ -10,12 +10,11 @@ import json
 from pathlib import Path
 
 import torch
-from rouge_score import rouge_scorer
 
 ADAPTER_DIR = "models/fpb-summarizer"
 TEST_FILE = "data/instruction_summ/test.jsonl"
 MAX_NEW_TOKENS = 160  # summaries are multi-sentence, not a single label word
-_ROUGE_SCORER = rouge_scorer.RougeScorer(["rougeL"], use_stemmer=True)
+_ROUGE_SCORER = None
 
 
 def generate_summary(model, tokenizer, messages) -> str:
@@ -30,6 +29,11 @@ def generate_summary(model, tokenizer, messages) -> str:
 
 def rouge_l(prediction: str, reference: str) -> float:
     """ROUGE-L F-measure between one prediction and its reference summary."""
+    global _ROUGE_SCORER
+    if _ROUGE_SCORER is None:
+        from rouge_score import rouge_scorer
+
+        _ROUGE_SCORER = rouge_scorer.RougeScorer(["rougeL"], use_stemmer=True)
     return _ROUGE_SCORER.score(reference, prediction)["rougeL"].fmeasure
 
 
