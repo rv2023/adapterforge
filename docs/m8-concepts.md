@@ -224,3 +224,41 @@ unset (reject "expected hash not configured"). To promote `fpb-summarizer`: regi
 (→ ECTSum test-set hash), then set that env var (or hardcode) before starting the control
 plane. This was the **last sentiment-pinned piece** — gate, drift sensor, and retraining
 are all now task/model-aware.
+
+---
+
+## 10. Hot-swap + KServe — zero-downtime serving (the M8 paid stretch)
+
+Both answer one question: after a promotion, how does serving start using the new model
+**without dropping a request?** Hot-swap = the *mechanism*; KServe = the *platform* that
+provides it the production way.
+
+**Hot-swap (the mechanism).** Naïve way: restart the serving process so it reloads the new
+production model → a downtime gap where requests fail. Hot-swap = replace the model a
+**running** server uses while it keeps serving (change the tyre without stopping the car):
+load the new adapter alongside the old, route new requests to it, drain in-flight on the
+old, then unload the old → **zero failed requests, no restart**. Clean with **vLLM
+multi-LoRA**: vLLM holds several LoRA adapters in one running server and add/removes them at
+runtime, so "swap" = load new adapter → flip routing → drop old. Our M8 router already does
+a *simple* version (point a backend slot at the new version); hot-swap makes that flip
+seamless under live traffic.
+
+**KServe (the platform).** A Kubernetes-native model-serving framework. Declare an
+**`InferenceService`** CRD ("serve this model") and KServe runs the pods + networking +
+rollout. What it gives you (serving versions of familiar SRE primitives):
+| Feature | SRE analogy |
+|---|---|
+| **Canary / traffic splitting** | 10% to new model version, 90% old, ramp to 100% — a canary deploy for models |
+| **Autoscaling + scale-to-zero** | no traffic → 0 pods → $0; request → spins up (Knative/HPA-like) |
+| **Standard inference protocol + GPU scheduling** | uniform `/predict` + pods land on GPU nodes |
+KServe's **canary traffic-shift IS the production-grade zero-downtime reroute** — instead of
+our router flipping an in-process pointer, the cluster shifts traffic gradually and rolls
+back automatically if the new version errors.
+
+**How they fit the capstone.** Demo goal: drift → retrain → promote → serving reroutes,
+zero failed requests. Hot-swap = the switch; KServe = doing it the "real company" way
+(canary, autoscale, rollback). **Honest scope:** the router already demonstrates rerouting
+on promotion, so these are NOT functionally required for the core demo — they're the
+**production-grade upgrade + JD checkboxes** (KServe / canary / zero-downtime). That's why
+it's the **paid stretch**: deploying needs a live EKS cluster + GPU nodes ($). Everything
+else left in M8 is free write-ups.

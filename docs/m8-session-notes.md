@@ -220,3 +220,30 @@ is there) → must `tar` + download `models/fpb-summarizer` first (M5 lesson: te
   the adapter trained on), NOT `instruction_format` (sentiment) — a drifted prompt silently
   tanks output. `confidence=None` (generation has no softmax max; cascade is classify-only).
 - **Status: Karthik to implement the two bodies (tutor rule); skeleton+TODOs handed over.**
+
+**Phase D IMPLEMENTED + verified (commit 638b46e).** Karthik wrote both bodies:
+`build_summary_predictor` (serving/app.py — load adapter + `eval_summarizer.generate_summary`,
+`summarize_format` prompt contract, `(summary, None)`) and router `build_summarizer`
+(delegates to it). Review caught one real coupling: importing `eval_summarizer` dragged in
+`rouge_score` (eval-only, not on the laptop) → Karthik fixed it the clean way: **lazy +
+memoized** rouge import inside `rouge_l()` (serving path no longer needs a metrics lib).
+Verified: imports clean, ruff clean.
+- **Local-run reality check:** the capstone smoke test (`route('summarize', …)` through
+  `default_backends()`) was **OOM-`Killed`** — laptop has **7.6 GB RAM (~2.5 GB free)**, a
+  1.5B LLM can't fit; also `use_4bit=True` default uses bitsandbytes+`device_map={"":0}` =
+  GPU path. **Lesson: a 1.5B LLM can't run on this laptop by any path** — same reason
+  `build_llm_sentiment` is mocked locally. Code is correct (it's the prod/GPU path); model
+  already proven on the pod (ROUGE beat bar). Deferred: mock the summarizer for local router
+  boot (tests unaffected — they use mock backends). In backlog.
+
+**Concept captured — hot-swap + KServe (concepts §10).** Hot-swap = swap the model a
+*running* server uses, no restart, zero dropped requests (clean via vLLM multi-LoRA);
+KServe = K8s-native serving platform (InferenceService CRD; canary traffic-split = the
+production zero-downtime reroute; autoscale/scale-to-zero). Both = the **paid stretch**
+(needs live EKS+GPU); router already shows rerouting, so they're production-grade polish +
+JD checkboxes, not core.
+
+**PAUSE POINT (2026-06-26).** M8 core COMPLETE: router+cascade, both adapters trained+
+promoted (governance proven twice), all 3 debts task-aware, summarizer backend wired.
+Remaining = free write-ups (READMEs, M6 "why vLLM wins", M1 SDK README) + threshold-tuning
+(free) + hot-swap/KServe (paid stretch). All tracked in deferred-backlog.md.
